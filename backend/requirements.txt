@@ -1,0 +1,5 @@
+﻿Django==5.2.18
+djangorestframework==3.18.3
+psycopg==3.3.6
+django-cors-headers==4.9.0
+python-dotenv==1.2.4

@@ -1,205 +1,645 @@
-# DevChat — приватный мессенджер
+# DevChat
 
-Небольшой приватный мессенджер для ограниченного круга людей. Проект создаётся для личного использования и в качестве проекта в GitHub-портфолио.
+**Русский** | [English](#english)
 
-**Текущий этап: Wave 1 — Foundation.**
+---
 
-Проект разрабатывается с нуля. Описанные в плане функции являются будущими задачами, пока их реализация не проверена.
+# Русская версия
 
-## С чего начать
+## О проекте
 
-1. Прочитать этот README перед началом работы.
-2. Проверить текущую структуру проекта и состояние Git.
-3. Выполнять задачи текущей волны, не переходя к следующим без необходимости.
-4. После изменений запускать соответствующие проверки и обновлять этот README при изменении архитектуры или статуса проекта.
+**DevChat** — приватное веб-приложение для обмена сообщениями в небольшой группе друзей. Проект разрабатывается как full-stack приложение с отдельными frontend и backend, поддержкой личных переписок и обмена сообщениями в реальном времени.
 
-## Стек
+Основные цели проекта:
+- Закрытая регистрация пользователей по приглашениям.
+- Личные переписки между пользователями.
+- Простой и адаптивный интерфейс.
+- Обмен сообщениями в реальном времени.
+- Передача изображений и файлов.
+- Безопасная работа с учётными записями и личными сообщениями.
 
-| Слой | Технологии |
-|---|---|
-| Frontend | Next.js, React, JavaScript, CSS Modules |
-| Backend | Python, Django, Django REST Framework |
-| Database | PostgreSQL 18 |
-| Realtime | Django Channels, WebSockets |
-| Infrastructure | Git, GitHub; хостинг определить позднее |
+## Технологический стек
 
-Redis добавлять только при необходимости. Не подключать новые технологии без конкретной задачи.
+**Frontend**
+- Next.js
+- React
+- JavaScript
+- CSS Modules
 
-## Структура проекта
+**Backend**
+- Python
+- Django
+- Django REST Framework
+- Django Channels для WebSocket-соединений
+
+**База данных и инфраструктура**
+- PostgreSQL 18
+- Redis при необходимости для WebSocket-инфраструктуры
+- Переменные окружения для конфигурации и секретов
+
+## Архитектура проекта
 
 ```text
 DevChat/
 ├── backend/
-│   ├── .venv/
 │   ├── config/
-│   ├── apps/
+│   ├── core/
 │   ├── manage.py
 │   ├── requirements.txt
-│   └── .env.example
+│   ├── .env.example
+│   └── .env
 ├── frontend/
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── README.md
-└── .gitignore
+├── .gitignore
+└── README.md
 ```
 
-Это целевая структура, а не список уже существующих файлов. Допускается менять внутреннюю организацию, сохраняя разделение frontend и backend.
+- `backend/` — Django, API и работа с базой данных.
+- `frontend/` — интерфейс приложения на Next.js.
+- `.env` — локальные настройки и секреты, которые нельзя публиковать.
+- `.env.example` — шаблон необходимых переменных окружения без реальных секретов.
 
-- `backend/` — API, авторизация, бизнес-логика и работа с PostgreSQL.
-- `frontend/` — страницы, компоненты и интерфейс пользователя.
-- `.venv/` — Python-окружение внутри `backend/`.
-- `.env` — локальные переменные окружения и секреты; не коммитить.
-- `.env.example` — перечень необходимых переменных без реальных секретов.
-- `.gitignore` — исключения для локальных файлов, зависимостей и секретов.
+Структура будет расширяться по мере реализации авторизации, переписок, сообщений и WebSocket-соединений.
 
-## Волна 1 — Foundation
+## Функциональность
 
-Цель — получить минимальную работающую основу приложения, на которой можно строить мессенджер.
+### Запланировано
 
-### Backend
-
-- [ ] Создать виртуальное окружение Python в `backend/.venv/`.
-- [ ] Установить Django, Django REST Framework, драйвер PostgreSQL и необходимые зависимости.
-- [ ] Создать Django-проект с конфигурацией в `backend/config/`.
-- [ ] Подключить PostgreSQL через переменные окружения.
-- [ ] Использовать существующую локальную базу `devchat_db`.
-- [ ] Подготовить `.env.example`.
-- [ ] Настроить `.gitignore`.
-- [ ] Проверить проект командой `python manage.py check`.
-- [ ] Применить миграции и проверить подключение к PostgreSQL.
-- [ ] Создать `GET /api/health/` для проверки состояния backend.
-
-### Frontend
-
-- [ ] Создать приложение Next.js внутри `frontend/`.
-- [ ] Использовать JavaScript, не TypeScript.
-- [ ] Настроить CSS Modules.
-- [ ] Создать минимальную стартовую страницу DevChat.
-- [ ] Настроить адрес backend через переменную окружения.
-- [ ] Подготовить адаптивную основу для мобильных устройств и компьютеров.
-- [ ] Не реализовывать полноценный интерфейс чатов, авторизацию и профили на этом этапе.
-
-### Интеграция
-
-- [ ] Проверить независимый запуск backend и frontend.
-- [ ] Проверить доступность health endpoint.
-- [ ] Настроить CORS для локального frontend без разрешения любых источников в production.
-- [ ] Проверить, что секреты и виртуальные окружения не попадают в Git.
-- [ ] Добавить в README актуальные инструкции локального запуска.
-
-### Критерии завершения
-
-Волна 1 завершена, когда:
-
-1. Django запускается без ошибок.
-2. Backend подключается к `devchat_db`.
-3. Миграции выполняются успешно.
-4. `GET /api/health/` возвращает успешный ответ.
-5. Next.js запускается и отображает стартовую страницу.
-6. Frontend может обратиться к backend.
-7. Инструкции запуска проверены.
-8. В Git нет секретов и локальных зависимостей.
-
-## План следующих волн
-
-### Wave 2 — Accounts & Invitations
-
-- Регистрация по имени пользователя, паролю и пригласительному коду.
-- Закрытая регистрация по действительным приглашениям.
-- Безопасное хранение паролей средствами Django.
-- Вход, выход и получение данных текущего пользователя.
-- Базовая защита API и валидация запросов.
-
-### Wave 3 — Chats & Messages
-
-- Приватные диалоги один на один.
-- Создание диалогов и получение списка чатов.
-- Отправка и получение текстовых сообщений.
+- Регистрация по приглашению: имя пользователя, пароль и код приглашения.
+- Авторизация пользователей.
+- Личные переписки один на один.
+- История сообщений.
 - Редактирование и удаление сообщений.
-- Ответы и реакции.
-- Проверка прав доступа на стороне backend.
-
-### Wave 4 — User Interface
-
-- Страницы входа и регистрации.
-- Список диалогов и окно переписки.
-- Отправка сообщений через API.
-- Минималистичный интерфейс.
-- Тёмная и светлая темы.
-- Адаптивная работа на телефонах и компьютерах.
-
-### Wave 5 — Realtime & Attachments
-
-- Django Channels и WebSockets.
-- Мгновенное получение сообщений.
-- Индикатор набора текста.
+- Ответы на сообщения и реакции.
 - Статусы доставки и прочтения.
-- Загрузка изображений и файлов с ограничениями по размеру и типу.
+- Индикатор набора текста.
+- Отправка изображений и файлов.
+- Адаптивный интерфейс для компьютеров и мобильных устройств.
+- Светлая и тёмная темы.
 
-### Wave 6 — Testing & Deployment
-
-- Тесты авторизации, доступа к чатам и сообщений.
-- Проверка типичных уязвимостей и обработка ошибок.
-- Улучшение интерфейса и пользовательского опыта.
-- Документация развёртывания.
-- Выбор хостинга и подготовка production-окружения.
-
-План может меняться по мере разработки. Не реализовывать последующие волны раньше времени без необходимости.
-
-## Правила Git
-
-- `main` — основная стабильная ветка; не использовать для непосредственной разработки.
-- `dev` — основная ветка разработки.
-- Для задач использовать отдельные ветки от актуальной `dev`, например `feature/wave-1-foundation`.
-- Не коммитить напрямую в `dev` и `main`.
-- Перед началом работы проверять актуальность ветки `dev`.
-- Завершённые изменения отправлять через Pull Request в `dev`.
-- Перед PR запускать доступные проверки и просматривать изменённые файлы.
-- Не перезаписывать чужие изменения и не выполнять принудительный push без необходимости.
-- Не создавать дополнительные ветки без причины.
-- Не коммитить `.env`, пароли, токены, `.venv/`, `node_modules/` и локальные базы данных.
-
-Если GitHub-репозиторий и ветки ещё не настроены, сначала проверить их фактическое состояние, а затем подготовить их без потери локальных изменений.
-
-## Правила работы с Codex
-
-- Перед изменениями изучать README и существующую структуру проекта.
-- Сначала проверять текущую реализацию, затем предлагать изменения.
-- Работать над конкретной задачей текущей волны.
-- Не переписывать архитектуру целиком без необходимости.
-- Не добавлять зависимости без обоснования.
-- Не хранить секреты в исходном коде.
-- Не отключать механизмы защиты ради упрощения разработки.
-- Не считать задачу завершённой без соответствующих проверок.
-- При ошибках сообщать причину, выполненные действия и оставшиеся проблемы.
-- Обновлять README, если изменились архитектура, команды запуска или статус реализации.
-- Не утверждать, что функция реализована, если её работа не проверена.
-- При неоднозначных требованиях, влияющих на архитектуру или безопасность, сначала объяснять проблему и предлагать решение.
-
-## Принципы безопасности
-
-- Мессенджер предназначен для ограниченного круга пользователей.
-- Регистрация доступна только по действительным приглашениям.
-- Backend отвечает за авторизацию и проверку доступа к данным.
-- Пользователь может читать и изменять только разрешённые ему данные.
-- Секреты не хранятся в Git.
-- В production используется HTTPS.
-- Сквозное шифрование (E2EE) пока не входит в требования. Не заявлять о его наличии.
-- Перед публичным развёртыванием проверить хранение сессий или токенов, защиту от перебора паролей, загрузку файлов, ограничения запросов и обработку ошибок.
+Функции будут добавляться поэтапно. Запланированная возможность не считается реализованной до завершения разработки и проверки.
 
 ## Текущий статус
 
-**Wave 1 — Foundation: подготовка.**
+### Wave 1 — Фундамент проекта
 
-- [x] Созданы корневые папки `backend/` и `frontend/`.
-- [x] Установлен PostgreSQL 18.
-- [x] Создана локальная база `devchat_db`.
-- [x] Восстановлен доступ к локальному PostgreSQL.
-- [ ] Создан Django-проект.
-- [ ] Настроено Python-окружение и установлены зависимости.
-- [ ] Подключён Django к PostgreSQL.
-- [ ] Создано приложение Next.js.
-- [ ] Проверена интеграция frontend и backend.
+**Выполнено**
+- [x] Создан Git-репозиторий.
+- [x] Созданы и отправлены на GitHub ветки `main` и `dev`.
+- [x] Инициализирован Django-проект.
+- [x] Создана база данных PostgreSQL `devchat_db`.
+- [x] Настроено чтение конфигурации из `.env`.
+- [x] Применены начальные миграции Django.
+- [x] Создано приложение `core`.
+- [x] Реализован `GET /api/health/` для проверки API и подключения к базе данных.
+- [x] Настроен CORS для локальной разработки frontend.
+- [x] Создан `backend/requirements.txt`.
+- [x] Создан `backend/.env.example`.
 
-Отмечать задачи выполненными только после фактической проверки.
+**В работе**
+- [ ] Проверка установки backend в чистом окружении.
+- [ ] Инициализация Next.js frontend.
+- [ ] Подключение frontend к Django API.
+- [ ] Проверка CORS реальным запросом из frontend.
+- [ ] Добавление базовых автоматизированных тестов.
+
+### Wave 2 — Пользователи и приглашения
+
+- [ ] Настройка модели пользователя и авторизации.
+- [ ] Проверка кодов приглашений.
+- [ ] Реализация регистрации и входа.
+- [ ] Проверка аутентификации и прав доступа.
+- [ ] Тестирование неверных учётных данных и неавторизованных запросов.
+
+### Wave 3 — Переписки и сообщения
+
+- [ ] Создание моделей переписок и участников.
+- [ ] Создание модели сообщений и API endpoints.
+- [ ] Ограничение доступа к перепискам только их участниками.
+- [ ] История сообщений и пагинация.
+- [ ] Редактирование, удаление, ответы и реакции.
+
+### Wave 4 — Интерфейс
+
+- [ ] Страницы регистрации и входа.
+- [ ] Список переписок.
+- [ ] Интерфейс личного чата.
+- [ ] Адаптивная вёрстка.
+- [ ] Светлая и тёмная темы.
+- [ ] Состояния загрузки, отсутствия данных и ошибок.
+
+### Wave 5 — Реальное время и вложения
+
+- [ ] Интеграция Django Channels.
+- [ ] Аутентификация WebSocket-соединений и проверка прав доступа.
+- [ ] Доставка сообщений в реальном времени.
+- [ ] Индикаторы набора текста, доставки и прочтения.
+- [ ] Загрузка изображений и файлов.
+- [ ] Подключение Redis, если он потребуется для выбранной конфигурации.
+
+### Wave 6 — Тестирование и развёртывание
+
+- [ ] Тесты backend и frontend.
+- [ ] Проверка авторизации, разрешений и безопасности загрузки файлов.
+- [ ] Подготовка production-конфигурации.
+- [ ] Настройка production-базы данных и хранения файлов.
+- [ ] Развёртывание приложения.
+- [ ] Документация по запуску и обслуживанию.
+
+## Локальный запуск
+
+### Требования
+
+Необходимо установить:
+- Git.
+- Python, совместимый с зависимостями backend.
+- Node.js и npm.
+- PostgreSQL 18.
+- Редактор кода, например Visual Studio Code.
+
+Redis не требуется для начального REST API. Он может понадобиться при реализации обмена сообщениями в реальном времени.
+
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/count-rzy/DevChat.git
+cd DevChat
+git switch dev
+```
+
+### 2. Настройка backend
+
+Перейдите в папку backend:
+
+```bash
+cd backend
+```
+
+Создайте виртуальное окружение:
+
+```bash
+python -m venv .venv
+```
+
+Активируйте его в PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Установите зависимости:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 3. Настройка переменных окружения
+
+Создайте `.env` на основе шаблона:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Заполните `backend/.env` параметрами локальной базы данных:
+
+```dotenv
+DB_NAME=devchat_db
+DB_USER=postgres
+DB_PASSWORD=your_local_database_password
+DB_HOST=127.0.0.1
+DB_PORT=5432
+```
+
+Замените пример пароля своим локальным паролем PostgreSQL.
+
+**Не добавляйте `.env` в Git и не публикуйте его содержимое.**
+
+### 4. Подготовка базы данных
+
+Создайте базу `devchat_db`, если она ещё не существует.
+
+Примените миграции:
+
+```bash
+python manage.py migrate
+```
+
+### 5. Запуск сервера
+
+```bash
+python manage.py runserver
+```
+
+По умолчанию Django будет доступен по адресу `http://127.0.0.1:8000/`.
+
+### 6. Проверка API
+
+Откройте:
+
+`http://127.0.0.1:8000/api/health/`
+
+Ожидаемый ответ при успешном подключении:
+
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
+```
+
+Этот endpoint предназначен для проверки работоспособности во время разработки и не заменяет полноценный production-мониторинг.
+
+### 7. Настройка frontend
+
+Инструкция по запуску frontend будет добавлена после инициализации Next.js-приложения и фиксации его зависимостей.
+
+## API
+
+Реализованный endpoint:
+
+| Метод | Адрес | Назначение |
+|---|---|---|
+| `GET` | `/api/health/` | Проверка API и подключения к базе данных |
+
+Планируемые области API:
+
+| Область | Назначение |
+|---|---|
+| Accounts | Регистрация, вход и данные пользователей |
+| Invitations | Проверка кодов приглашений |
+| Conversations | Личные переписки и участники |
+| Messages | История и управление сообщениями |
+| Attachments | Загрузка изображений и файлов |
+
+Перечисленные выше области API пока являются планом, если они отдельно не отмечены как реализованные.
+
+## Правила разработки
+
+Используются следующие Git-ветки:
+- `main` — стабильная версия проекта.
+- `dev` — интеграционная ветка разработки.
+- `feature/<name>` — отдельная функция или задача.
+
+Рекомендуемый процесс:
+1. Обновить локальную ветку `dev`.
+2. Создать feature-ветку от `dev`.
+3. Реализовать одну логически завершённую задачу.
+4. Запустить проверки и тесты.
+5. Создать коммит с понятным сообщением.
+6. Отправить ветку на GitHub.
+7. Создать Pull Request в `dev`.
+8. Объединить изменения после проверки.
+
+Пример:
+
+```bash
+git switch dev
+git pull origin dev
+git switch -c feature/wave-1-foundation
+```
+
+Не отправляйте обычные рабочие изменения напрямую в `main`.
+
+## Безопасность и качество кода
+
+- Храните пароли, токены и секретные ключи в переменных окружения.
+- Не коммитьте `.env` и другие файлы с секретами.
+- Проверяйте данные на backend, даже если frontend уже выполняет валидацию.
+- Проверяйте права доступа при каждой операции с личными переписками и сообщениями.
+- Используйте встроенные механизмы Django для хеширования паролей.
+- Не разрешайте CORS-запросы с произвольных сайтов.
+- Проверяйте тип и размер загружаемых файлов.
+- Не раскрывайте чувствительные данные в API-ответах и логах.
+- Добавляйте тесты для важных бизнес-правил и проверки разрешений.
+- Фиксируйте зависимости проекта.
+- Используйте HTTPS и безопасную конфигурацию при production-развёртывании.
+
+## Текущее состояние проекта
+
+DevChat находится в активной разработке. Базовая конфигурация backend и подключение PostgreSQL готовы, но полноценное приложение для обмена сообщениями ещё не реализовано.
+
+Регистрация, приглашения, переписки, обмен сообщениями, вложения и frontend будут реализованы в следующих этапах.
+
+## Лицензия
+
+Лицензия проекта пока не выбрана. Все права сохраняются за правообладателем, пока в репозитории не будет добавлена лицензия.
+
+---
+
+# English
+
+## About
+
+**DevChat** is a private messaging web application designed for a small group of friends. It is developed as a full-stack project with a separate frontend and backend, private conversations, and real-time messaging.
+
+Project goals:
+- Invite-only user registration.
+- Private one-to-one conversations.
+- A clean, responsive interface.
+- Real-time message delivery.
+- Image and file sharing.
+- Secure handling of user accounts and private messages.
+
+## Technology Stack
+
+**Frontend**
+- Next.js
+- React
+- JavaScript
+- CSS Modules
+
+**Backend**
+- Python
+- Django
+- Django REST Framework
+- Django Channels for WebSocket communication
+
+**Database and Infrastructure**
+- PostgreSQL 18
+- Redis if required for the WebSocket infrastructure
+- Environment variables for configuration and secrets
+
+## Project Architecture
+
+```text
+DevChat/
+├── backend/
+│   ├── config/
+│   ├── core/
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── .env
+├── frontend/
+├── .gitignore
+└── README.md
+```
+
+- `backend/` contains the Django application, API, and database integration.
+- `frontend/` will contain the Next.js user interface.
+- `.env` stores local configuration and secrets and must not be committed.
+- `.env.example` documents required environment variables without exposing real credentials.
+
+The structure will expand as authentication, conversations, messages, and WebSocket communication are implemented.
+
+## Planned Features
+
+- Invite-only registration using a username, password, and invitation code.
+- User authentication.
+- Private one-to-one conversations.
+- Message history.
+- Message editing and deletion.
+- Replies and reactions.
+- Delivery and read statuses.
+- Typing indicators.
+- Image and file attachments.
+- Responsive desktop and mobile layouts.
+- Dark and light themes.
+
+Features will be implemented incrementally. A planned feature is not considered complete until it has been implemented and verified.
+
+## Project Status
+
+### Wave 1 — Foundation
+
+**Completed**
+- [x] Git repository initialized.
+- [x] `main` and `dev` branches created and pushed to GitHub.
+- [x] Django project initialized.
+- [x] PostgreSQL database `devchat_db` created.
+- [x] Environment-based configuration added.
+- [x] Initial Django migrations applied.
+- [x] `core` application created.
+- [x] `GET /api/health/` endpoint implemented to check API and database availability.
+- [x] CORS configured for local frontend development.
+- [x] `backend/requirements.txt` created.
+- [x] `backend/.env.example` created.
+
+**In progress**
+- [ ] Verify backend setup from a clean environment.
+- [ ] Initialize the Next.js frontend.
+- [ ] Connect the frontend to the Django API.
+- [ ] Verify CORS with an actual frontend request.
+- [ ] Add basic automated tests.
+
+### Wave 2 — Accounts and Invitations
+
+- [ ] Configure the user model and authentication.
+- [ ] Implement invitation-code validation.
+- [ ] Implement registration and login endpoints.
+- [ ] Add authentication and authorization checks.
+- [ ] Test invalid credentials and unauthorized requests.
+
+### Wave 3 — Conversations and Messages
+
+- [ ] Create conversation and membership models.
+- [ ] Create message models and API endpoints.
+- [ ] Restrict conversation access to its participants.
+- [ ] Implement message history and pagination.
+- [ ] Add editing, deletion, replies, and reactions.
+
+### Wave 4 — Frontend Interface
+
+- [ ] Build registration and login screens.
+- [ ] Build the conversation list.
+- [ ] Build the private chat interface.
+- [ ] Implement responsive layouts.
+- [ ] Add dark and light themes.
+- [ ] Add loading, empty, and error states.
+
+### Wave 5 — Real-Time Communication and Attachments
+
+- [ ] Integrate Django Channels.
+- [ ] Implement WebSocket authentication and access checks.
+- [ ] Add real-time message delivery.
+- [ ] Add typing indicators and delivery/read statuses.
+- [ ] Implement image and file uploads.
+- [ ] Add Redis if required by the selected channel-layer configuration.
+
+### Wave 6 — Testing and Deployment
+
+- [ ] Add backend and frontend tests.
+- [ ] Review authentication, permissions, and file-upload security.
+- [ ] Prepare production configuration.
+- [ ] Configure the production database and file storage.
+- [ ] Deploy the application.
+- [ ] Document deployment and maintenance.
+
+## Getting Started
+
+### Prerequisites
+
+Install the following tools:
+- Git.
+- Python compatible with the backend dependencies.
+- Node.js and npm.
+- PostgreSQL 18.
+- A code editor such as Visual Studio Code.
+
+Redis is not required for the initial REST API. It may be needed when real-time messaging is implemented.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/count-rzy/DevChat.git
+cd DevChat
+git switch dev
+```
+
+### 2. Set Up the Backend
+
+Navigate to the backend directory:
+
+```bash
+cd backend
+```
+
+Create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it in PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 3. Configure Environment Variables
+
+Create a local `.env` file from the example:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Configure `backend/.env` with your local PostgreSQL credentials:
+
+```dotenv
+DB_NAME=devchat_db
+DB_USER=postgres
+DB_PASSWORD=your_local_database_password
+DB_HOST=127.0.0.1
+DB_PORT=5432
+```
+
+Replace the example password with your actual local PostgreSQL password.
+
+**Never commit `.env` or publish its contents.**
+
+### 4. Prepare the Database
+
+Create a PostgreSQL database named `devchat_db` if it does not already exist.
+
+Apply Django migrations:
+
+```bash
+python manage.py migrate
+```
+
+### 5. Start the Backend
+
+```bash
+python manage.py runserver
+```
+
+By default, Django is available at `http://127.0.0.1:8000/`.
+
+### 6. Verify the API
+
+Open:
+
+`http://127.0.0.1:8000/api/health/`
+
+Expected response when the API and database are available:
+
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
+```
+
+This endpoint is intended for development checks and does not replace production monitoring.
+
+### 7. Set Up the Frontend
+
+Frontend setup instructions will be added after the Next.js application has been initialized and its dependencies have been documented.
+
+## API Overview
+
+Implemented endpoint:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/health/` | Check API and database availability |
+
+Planned API areas:
+
+| Area | Responsibility |
+|---|---|
+| Accounts | Registration, login, and user information |
+| Invitations | Invitation-code validation |
+| Conversations | Private conversations and participants |
+| Messages | Message history and message operations |
+| Attachments | Image and file uploads |
+
+These API areas are planned and are not implemented unless explicitly marked as completed.
+
+## Development Workflow
+
+The repository uses the following branches:
+- `main` — stable project version.
+- `dev` — development integration branch.
+- `feature/<name>` — an individual feature or task.
+
+Recommended workflow:
+1. Update the local `dev` branch.
+2. Create a feature branch from `dev`.
+3. Implement one focused change.
+4. Run relevant checks and tests.
+5. Commit with a descriptive message.
+6. Push the feature branch to GitHub.
+7. Open a pull request targeting `dev`.
+8. Merge after review and verification.
+
+Example:
+
+```bash
+git switch dev
+git pull origin dev
+git switch -c feature/wave-1-foundation
+```
+
+Do not push regular development changes directly to `main`.
+
+## Security and Code Quality
+
+- Keep passwords, tokens, and secret keys in environment variables.
+- Never commit `.env` or other files containing secrets.
+- Validate input on the backend, even when the frontend also validates it.
+- Enforce authorization for every private conversation and message operation.
+- Use Django's built-in password hashing mechanisms.
+- Restrict CORS to explicitly allowed origins.
+- Validate uploaded file types and sizes.
+- Avoid exposing sensitive data in API responses and logs.
+- Add tests for important business rules and access-control checks.
+- Keep dependencies documented and reproducible.
+- Use HTTPS and production-grade configuration when deploying.
+
+## Current Limitations
+
+DevChat is under active development. The backend foundation and PostgreSQL connection are in place, but the complete messaging application has not yet been implemented.
+
+Authentication, invitations, private conversations, messaging, attachments, and the frontend remain planned work.
+
+## License
+
+No license has been selected yet. All rights are reserved unless a license is added to the repository.
