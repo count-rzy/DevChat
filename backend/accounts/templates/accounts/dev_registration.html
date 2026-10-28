@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1a">
+  <title>DevChat - Create account</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #edf3ff;
+      background: #080d1a;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    * { box-sizing: border-box; }
+    body {
+      display: grid;
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      padding: 32px 18px;
+      place-items: center;
+      overflow-x: hidden;
+      background: radial-gradient(ellipse at 50% 0%, rgb(43 81 147 / 24%), transparent 48%),
+                  linear-gradient(145deg, #080d1a 8%, #0a1223 55%, #080d18);
+    }
+    body::before {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      background: radial-gradient(circle at 12% 68%, rgb(38 104 187 / 13%), transparent 32%),
+                  radial-gradient(circle at 88% 28%, rgb(47 78 155 / 14%), transparent 30%);
+      content: "";
+      pointer-events: none;
+    }
+    .page { width: min(100%, 440px); }
+    .card {
+      padding: clamp(26px, 7vw, 42px);
+      border: 1px solid rgb(190 211 255 / 13%);
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgb(25 36 59 / 86%), rgb(15 23 40 / 78%));
+      box-shadow: 0 28px 90px rgb(0 0 0 / 42%), inset 0 1px 0 rgb(255 255 255 / 5%);
+      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(24px);
+      animation: card-enter 520ms cubic-bezier(.2, .75, .25, 1) both;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; color: #f4f7ff; font-size: 1rem; font-weight: 650; letter-spacing: .01em; }
+    .brand-mark { width: 9px; height: 9px; border-radius: 50%; background: #76b9ff; box-shadow: 0 0 18px rgb(91 166 255 / 66%); }
+    .eyebrow { margin: 30px 0 10px; color: #8eacd5; font-size: .72rem; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 0; color: #f2f6ff; font-size: clamp(1.65rem, 5vw, 2rem); font-weight: 590; letter-spacing: -.045em; line-height: 1.2; }
+    .intro { margin: 12px 0 28px; color: #a6b4ca; font-size: .94rem; line-height: 1.65; }
+    .field { margin-top: 18px; }
+    label { display: block; margin-bottom: 8px; color: #d5deed; font-size: .85rem; font-weight: 550; }
+    input {
+      display: block; width: 100%; min-height: 49px; padding: 12px 14px;
+      border: 1px solid rgb(173 195 232 / 17%); border-radius: 11px; outline: none;
+      background: rgb(5 11 22 / 48%); color: #f2f6ff; font: inherit; font-size: .94rem;
+      transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+    }
+    input::placeholder { color: #687891; }
+    input:hover { border-color: rgb(173 195 232 / 30%); }
+    input:focus-visible { border-color: #70aef3; background: rgb(7 14 27 / 76%); box-shadow: 0 0 0 3px rgb(74 139 220 / 19%); }
+    button {
+      display: flex; width: 100%; min-height: 50px; margin-top: 25px; align-items: center; justify-content: center;
+      border: 1px solid rgb(157 196 255 / 26%); border-radius: 11px;
+      background: linear-gradient(110deg, #315f9d, #3b70b4);
+      box-shadow: 0 9px 24px rgb(20 59 112 / 24%), inset 0 1px 0 rgb(255 255 255 / 12%);
+      color: #fff; cursor: pointer; font: inherit; font-size: .94rem; font-weight: 620;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); background: linear-gradient(110deg, #396dad, #477fc2); box-shadow: 0 12px 28px rgb(20 59 112 / 34%), inset 0 1px 0 rgb(255 255 255 / 16%); }
+    button:focus-visible { outline: 3px solid rgb(132 190 255 / 62%); outline-offset: 3px; }
+    button:disabled { cursor: wait; opacity: .72; }
+    .result { margin: 16px 0 0; padding: 13px 14px; border: 1px solid transparent; border-radius: 10px; font-size: .87rem; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .result[hidden] { display: none; }
+    .result[data-state="success"] { border-color: rgb(105 201 165 / 25%); background: rgb(27 104 80 / 18%); color: #b8f0da; }
+    .result[data-state="error"] { border-color: rgb(240 129 142 / 26%); background: rgb(125 42 57 / 20%); color: #ffc1c8; }
+    .signin-note { margin: 24px 0 0; color: #8292aa; font-size: .83rem; line-height: 1.5; text-align: center; }
+    .signin-note strong { color: #b6c7df; font-weight: 550; }
+    .local-note { margin: 17px 0 0; color: #62728a; font-size: .7rem; letter-spacing: .035em; text-align: center; }
+    @keyframes card-enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 480px) { body { padding: 18px 14px; } .card { border-radius: 20px; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card" aria-labelledby="registration-title">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>DevChat</span></div>
+      <p class="eyebrow" data-en="Private · Invite only" data-ru="&#x41F;&#x440;&#x438;&#x432;&#x430;&#x442;&#x43D;&#x43E; · &#x41F;&#x43E; &#x43F;&#x440;&#x438;&#x433;&#x43B;&#x430;&#x448;&#x435;&#x43D;&#x438;&#x44E;">Private · Invite only</p>
+      <h1 id="registration-title" data-en="Create your account" data-ru="&#x421;&#x43E;&#x437;&#x434;&#x430;&#x439;&#x442;&#x435; &#x430;&#x43A;&#x43A;&#x430;&#x443;&#x43D;&#x442;">Create your account</h1>
+      <p class="intro" data-en="A private space for your conversations. Registration is available with an invitation."
+         data-ru="&#x41F;&#x440;&#x43E;&#x441;&#x442;&#x440;&#x430;&#x43D;&#x441;&#x442;&#x432;&#x43E; &#x434;&#x43B;&#x44F; &#x43B;&#x438;&#x447;&#x43D;&#x44B;&#x445; &#x431;&#x435;&#x441;&#x435;&#x434;. &#x420;&#x435;&#x433;&#x438;&#x441;&#x442;&#x440;&#x430;&#x446;&#x438;&#x44F; &#x434;&#x43E;&#x441;&#x442;&#x443;&#x43F;&#x43D;&#x430; &#x43F;&#x43E; &#x43F;&#x440;&#x438;&#x433;&#x43B;&#x430;&#x448;&#x435;&#x43D;&#x438;&#x44E;.">A private space for your conversations. Registration is available with an invitation.</p>
+
+      <form id="registration-form">
+        <div class="field">
+          <label for="username" data-en="Username" data-ru="&#x418;&#x43C;&#x44F; &#x43F;&#x43E;&#x43B;&#x44C;&#x437;&#x43E;&#x432;&#x430;&#x442;&#x435;&#x43B;&#x44F;">Username</label>
+          <input id="username" name="username" autocomplete="username" minlength="3" maxlength="150" autocapitalize="none" spellcheck="false" required>
+        </div>
+        <div class="field">
+          <label for="password" data-en="Password" data-ru="&#x41F;&#x430;&#x440;&#x43E;&#x43B;&#x44C;">Password</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required>
+        </div>
+        <div class="field">
+          <label for="invite_code" data-en="Invitation code" data-ru="&#x41A;&#x43E;&#x434; &#x43F;&#x440;&#x438;&#x433;&#x43B;&#x430;&#x448;&#x435;&#x43D;&#x438;&#x44F;">Invitation code</label>
+          <input id="invite_code" name="invite_code" maxlength="32" autocomplete="off" required>
+        </div>
+        <button id="submit-button" type="submit" data-en="Create account" data-ru="&#x417;&#x430;&#x440;&#x435;&#x433;&#x438;&#x441;&#x442;&#x440;&#x438;&#x440;&#x43E;&#x432;&#x430;&#x442;&#x44C;&#x441;&#x44F;">Create account</button>
+      </form>
+
+      <div id="result" class="result" role="status" aria-live="polite" tabindex="-1" hidden></div>
+      <p class="signin-note">
+        <span data-en="Already have an account?" data-ru="&#x423;&#x436;&#x435; &#x435;&#x441;&#x442;&#x44C; &#x430;&#x43A;&#x43A;&#x430;&#x443;&#x43D;&#x442;?">Already have an account?</span>
+        <strong data-en="Sign in is coming soon" data-ru="&#x412;&#x445;&#x43E;&#x434; &#x441;&#x43A;&#x43E;&#x440;&#x43E; &#x43F;&#x43E;&#x44F;&#x432;&#x438;&#x442;&#x441;&#x44F;">Sign in is coming soon</strong>
+      </p>
+      <p class="local-note" data-en="Development registration page" data-ru="&#x421;&#x442;&#x440;&#x430;&#x43D;&#x438;&#x446;&#x430; &#x440;&#x435;&#x433;&#x438;&#x441;&#x442;&#x440;&#x430;&#x446;&#x438;&#x438; &#x434;&#x43B;&#x44F; &#x440;&#x430;&#x437;&#x440;&#x430;&#x431;&#x43E;&#x442;&#x43A;&#x438;">Development registration page</p>
+    </section>
+  </main>
+  <script>
+    const language = navigator.language.toLowerCase().startsWith("ru") ? "ru" : "en";
+    document.documentElement.lang = language;
+    document.querySelectorAll("[data-en][data-ru]").forEach((element) => {
+      element.textContent = element.dataset[language];
+    });
+
+    const form = document.getElementById("registration-form");
+    const button = document.getElementById("submit-button");
+    const result = document.getElementById("result");
+    const copy = language === "ru"
+      ? {
+          sending: "Отправка…",
+          failed: "Не удалось отправить запрос. Проверьте подключение и попробуйте ещё раз.",
+          success: "Аккаунт создан.",
+          error: "Не удалось создать аккаунт.",
+          fields: { username: "Имя пользователя", password: "Пароль", invite_code: "Код приглашения", detail: "Подробности" },
+        }
+      : {
+          sending: "Creating account…",
+          failed: "The request could not be sent. Check your connection and try again.",
+          success: "Account created.",
+          error: "Could not create the account.",
+          fields: { username: "Username", password: "Password", invite_code: "Invitation code", detail: "Details" },
+        };
+
+    function showResult(message, state) {
+      result.textContent = message;
+      result.dataset.state = state;
+      result.hidden = false;
+    }
+
+    function validationSummary(body) {
+      if (!body || typeof body !== "object") return "";
+      return Object.entries(body).map(([field, messages]) => {
+        const label = copy.fields[field] || copy.fields.detail;
+        const text = Array.isArray(messages) ? messages.join(" ") : String(messages);
+        return label + ": " + text;
+      }).join("\n");
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      result.hidden = true;
+      button.disabled = true;
+      button.textContent = copy.sending;
+
+      try {
+        const csrfResponse = await fetch("/api/accounts/csrf/", { credentials: "same-origin" });
+        if (!csrfResponse.ok) throw new Error();
+        const csrfData = await csrfResponse.json();
+        const response = await fetch("/api/accounts/register/", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfData.csrfToken },
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        });
+        const body = await response.json();
+
+        if (response.ok) {
+          showResult(copy.success + " " + body.user.username, "success");
+          form.reset();
+        } else {
+          const details = validationSummary(body);
+          showResult(copy.error + " (HTTP " + response.status + ")" + (details ? "\n" + details : ""), "error");
+        }
+      } catch {
+        showResult(copy.failed, "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = button.dataset[language];
+      }
+    });
+  </script>
+</body>
+</html>

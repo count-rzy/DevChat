@@ -1,5 +1,8 @@
 
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .models import InviteCode
@@ -9,6 +12,7 @@ class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=150,
         min_length=3,
+        validators=[UnicodeUsernameValidator()],
     )
     password = serializers.CharField(
         write_only=True,
@@ -20,8 +24,17 @@ class RegisterSerializer(serializers.Serializer):
         trim_whitespace=True,
     )
 
+    def validate_password(self, value):
+        username = self.initial_data.get("username", "")
+        user = User(username=username if isinstance(username, str) else "")
+        try:
+            validate_password(value, user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(error.messages) from error
+        return value
+
     def validate_username(self, value):
-        if User.objects.filter(username__iexact=value).exists():
+        if User.objects.filter(username=value).exists():
             raise serializers.ValidationError(
                 "This username is already taken."
             )
@@ -36,3 +49,8 @@ class RegisterSerializer(serializers.Serializer):
                 "Invalid or already used invite code."
             )
         return value
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150, trim_whitespace=True)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
