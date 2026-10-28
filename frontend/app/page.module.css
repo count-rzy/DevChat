@@ -293,6 +293,33 @@
   font-size: 11px;
 }
 
+.profileActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.languagePicker select {
+  height: 32px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .conversation {
   display: flex;
   min-width: 0;
@@ -527,7 +554,7 @@
   .sectionLabel,
   .chatInfo,
   .profileInfo,
-  .profile > .iconButton {
+  .profileActions > .iconButton {
     display: none;
   }
 
@@ -550,6 +577,17 @@
     justify-content: center;
     width: 100%;
     padding: 13px 0;
+  }
+
+  .profileActions {
+    gap: 0;
+  }
+
+  .languagePicker select {
+    height: 29px;
+    padding: 0 2px;
+    border-color: transparent;
+    background: var(--panel);
   }
 
   .profileAvatar {
