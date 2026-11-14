@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'core',
 
     "accounts.apps.AccountsConfig",
+    "messaging.apps.MessagingConfig",
 ]
 
 MIDDLEWARE = [

@@ -7,7 +7,11 @@ from .views import (
     dev_registration_page,
     log_in,
     log_out,
+    my_profile,
+    public_profile,
+    public_profiles,
     register,
+    update_my_profile,
 )
 
 
@@ -18,4 +22,8 @@ urlpatterns = [
     path("login/", log_in, name="login"),
     path("logout/", log_out, name="logout"),
     path("me/", current_user, name="current-user"),
+    path("profile/", my_profile, name="my-profile"),
+    path("profile/update/", update_my_profile, name="update-my-profile"),
+    path("users/", public_profiles, name="public-profiles"),
+    path("users/<int:user_id>/", public_profile, name="public-profile"),
 ]

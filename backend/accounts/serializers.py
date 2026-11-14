@@ -5,7 +5,7 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import InviteCode
+from .models import InviteCode, UserProfile
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -54,3 +54,15 @@ class RegisterSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, trim_whitespace=True)
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ["display_name", "description", "preferred_language"]
+
+    def validate_display_name(self, value):
+        return value.strip()
+
+    def validate_description(self, value):
+        return value.strip()
