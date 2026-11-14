@@ -1,50 +1,58 @@
-# DevChat task status
+# Статус задач DevChat
 
-Checklist items are marked complete only where the current implementation has been inspected. This file is a verified snapshot, not a claim that planned features exist.
+Отмечены только пункты, наличие которых подтверждено текущей реализацией. Ручная проверка в браузере остаётся отдельным незавершённым пунктом.
 
-## Implemented
+## Реализовано
 
-- [x] Django project and PostgreSQL configuration.
-- [x] `GET /api/health/` database health endpoint.
-- [x] `InviteCode` model and Django Admin management.
-- [x] `POST /api/accounts/register/` with username/password validation, Django password hashing, CSRF protection, and transactional single-use invitation handling.
-- [x] Development-only browser registration form that submits through the existing CSRF-protected API and is hidden when `DEBUG=False`.
-- [x] Session authentication endpoints: CSRF bootstrap, login, logout, and current user.
-- [x] CSRF-protected state-changing auth endpoints and HttpOnly session cookies.
-- [x] Tests for registration, invitations, passwords, sessions, current-user permissions, CSRF, and concurrent invitation consumption.
-- [x] Next.js App Router chat prototype using JavaScript and CSS Modules.
-- [x] Frontend request to the backend health endpoint.
-- [x] English and Russian translations for the current prototype UI.
-- [x] Browser-language detection, English fallback, manual language selection, and local preference persistence.
+- [x] Проект Django с PostgreSQL и endpoint проверки БД `GET /api/health/`.
+- [x] Пригласительные коды, управление ими через Django Admin и однократная регистрация с валидацией пароля, CSRF, хешированием Django и транзакционным использованием кода.
+- [x] Сессионные endpoints: CSRF, вход, выход и текущий пользователь; HttpOnly cookie.
+- [x] Временные cache-based лимиты запросов входа и регистрации с ответом `429` и заголовком `Retry-After`.
+- [x] Next.js страницы входа и регистрации, восстановление сессии и переключение интерфейса между английским и русским.
+- [x] Модель и API профиля пользователя: чтение и изменение собственного отображаемого имени, описания и языка; чтение публичных данных активных пользователей.
+- [x] При создании аккаунта создаётся профиль; миграция заполняет профили существующих пользователей.
+- [x] Приватные диалоги один на один и постоянные текстовые сообщения через Django API.
+- [x] Backend проверяет членство в диалоге при чтении диалога и истории/отправке сообщений; история поддерживает курсорную пагинацию до 100 сообщений.
+- [x] Frontend использует API для профиля, списка диалогов, создания диалога, загрузки истории и отправки сообщений.
+- [x] Тесты регистрации, приглашений, паролей, сессий, CSRF, лимитов, профилей, прав доступа к сообщениям и конкурирующего использования приглашения.
 
-## Incomplete or unverified
+## Не завершено или не проверено вручную
 
-- [ ] Verify frontend localization behavior in both languages, unsupported-browser fallback, and saved preference after reload.
-- [ ] Add production Next.js registration/login pages and connect them to the CSRF/session API (the Django registration page is development-only).
-- [ ] Review the development registration page visually in a browser at desktop/mobile sizes and in English/Russian.
-- [ ] Add authentication rate limiting and brute-force protection.
-- [ ] Define and implement profile and avatar APIs, storage, upload validation, and owner-only permissions.
-- [ ] Persist chat conversations and messages in PostgreSQL and enforce membership permissions.
-- [ ] Localize future screens, backend-facing errors, and locale-sensitive date displays.
-- [ ] Decide account/local language preference synchronization after profiles and authentication exist.
-- [ ] Add realtime messaging and attachments only after persistent messaging is established.
-- [ ] Configure production secrets, allowed hosts, deployment, and media storage.
+- [ ] Ручная проверка в браузере английского/русского языков, fallback, сохранения языка, входа, регистрации, профиля и переписки.
+- [ ] Визуальная проверка интерфейса и адаптивности в браузере.
+- [ ] Загрузка, замена и удаление аватаров.
+- [ ] WebSocket-доставка, индикаторы набора текста, статусы доставки/прочтения, вложения, редактирование и удаление сообщений.
+- [ ] Локализация всех backend ошибок, дат и будущих экранов.
+- [ ] Общий cache и безопасная настройка IP/proxy для production rate limits.
+- [ ] Production-конфигурация секретов, хостов, CORS/CSRF, HTTPS, развёртывание и хранение медиа.
+- [ ] Финальная проверка в чистом окружении.
 
-## Current limitations
+## Миграции и существующие данные
 
-- Chat contacts and messages are sample data held in frontend React state; sending a message does not persist it.
-- The language setting is stored in browser local storage and is not associated with an account.
-- `DEBUG` defaults to true for local development. Production still needs a stable secret, allowed hosts, exact deployed CORS/CSRF origins, HTTPS, and a reviewed deployment configuration.
-- No authentication rate limiting or brute-force protection is implemented.
-- No end-to-end encryption is implemented or claimed.
+- `accounts.0001_initial` создаёт таблицу приглашений.
+- `accounts.0002_userprofile` добавляет таблицу профилей и создаёт пустой профиль для каждого уже существующего Django-пользователя. Значения по умолчанию: пустые `display_name` и `description`, язык `en`. Миграция не изменяет/не удаляет строки пользователей или приглашений. При откате Django удалит новую таблицу профилей и данные профилей; существующие пользователи и приглашения при этом остаются.
+- `messaging.0001_initial` добавляет таблицы диалогов и сообщений, ограничения уникальной упорядоченной пары участников и индекс истории. Существующие таблицы и записи не меняются; новые таблицы создаются пустыми.
+- Модели объявляют `CASCADE`: удаление пользователя удаляет его профиль, диалоги и связанные сообщения. Это поведение штатного удаления аккаунта; если появится функция удаления пользователей, её последствия следует учитывать отдельно.
+- Во время этой задачи `migrate` к локальной базе не запускался. Перед ручным применением проверьте `backend/.env`, план миграций и наличие актуальной резервной копии важных локальных данных.
 
-## Verification record
+## Проверки этой задачи
 
-- Repository audit and implementation inspection completed on 2026-10-28.
-- `npm run lint` passed.
-- `npm run build` passed with Next.js 16.4.3.
-- `python manage.py test accounts.tests` passed 16 tests, including registration, authentication, CSRF, concurrent invite consumption, and DEBUG-only page rendering.
-- `python manage.py check` passed with no issues.
-- Migration checks (`makemigrations --check --dry-run` and `migrate --check`) passed on 2026-10-28.
-- `git diff --check` passed; Git reported expected LF-to-CRLF conversion warnings.
-- Manual browser checks for frontend language selection, fallback, reload persistence, and the registration page's visual layout remain pending; no frontend test runner is configured.
+Обновлено 2026-11-14: README содержит актуальный статус функций и подробную инструкцию ручной проверки в Windows PowerShell.
+
+- `python manage.py check` — успешно, проблем не найдено.
+- `python manage.py makemigrations --check --dry-run` — успешно, изменений моделей без миграций нет.
+- `python manage.py migrate --plan` — успешно; показывает ожидающие `accounts.0002_userprofile` и `messaging.0001_initial`.
+- `python manage.py migrate --check` — код завершения 1 из-за ожидающих миграций в настроенной локальной БД; миграции намеренно не применялись.
+- `python manage.py test accounts.tests messaging.tests` — успешно, 31 тест пройден. Django создал и удалил отдельную тестовую БД; локальная рабочая БД не мигрировалась.
+- `npm run lint` — успешно.
+- `npm run build` — успешно на Next.js 16.4.3.
+- `git diff --check` — успешно; Git вывел предупреждения о преобразовании LF в CRLF.
+- Django без виртуального окружения не запускался (в системном Python нет Django); повторные backend-команды запускались через `backend\\.venv\\Scripts\\python.exe`.
+- Ручная проверка приложения в браузере не выполнялась.
+
+## Ограничения
+
+- Сохранение и обмен сообщениями выполняются HTTP-запросами; realtime и вложений нет.
+- Язык аккаунта синхронизируется с языком интерфейса, локальные настройки браузера используются для анонимного/первого посещения.
+- Лимиты запросов используют конфигурацию Django cache; локальный cache не обеспечивает общий лимит между production workers.
+- End-to-end encryption не реализовано и не заявляется.

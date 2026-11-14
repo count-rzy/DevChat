@@ -4,13 +4,13 @@
 
 **DevChat** — приватный веб-мессенджер для небольшой группы пользователей с регистрацией по приглашениям. Проект разрабатывается с нуля для личного использования и в качестве full-stack проекта в GitHub-портфолио.
 
-> **Project status:** The Django foundation, single-use invite registration, and session-based authentication API are implemented. The Next.js frontend remains a local-state chat prototype with English and Russian UI translation. Persistent messages, user profiles, and avatar management are not implemented.
+> **Project status:** Django invite registration, session authentication, temporary auth request limits, user profiles, private one-to-one conversations, and persistent text messages are implemented. The Next.js frontend includes English/Russian authentication, profile editing, conversation lists, and message history/sending connected to the backend. Avatar upload, realtime delivery, attachments, and manual browser verification remain incomplete.
 
-> **Development wave status:** Wave 1 (project foundation, backend health endpoint, and chat prototype) is complete. Wave 2 (invite-only registration and Django session authentication with CSRF) is implemented and covered by tests; authentication abuse protection remains planned.
+> **Development wave status:** The foundation and account/authentication work is complete, including session auth with CSRF and temporary request limits. Profiles, private persistent text messaging, and frontend API integration are implemented. Realtime, avatar uploads, attachments, and production cache/proxy configuration remain future work.
 
-> Статус волн: волна 1 (основа проекта, endpoint проверки доступности бэкенда и прототип чата) завершена. Волна 2 (регистрация по приглашениям и session-авторизация с CSRF) реализована и проверена тестами; защита от злоупотреблений входа ещё не реализована.
+> Статус разработки: основа и аккаунты с авторизацией завершены, включая session-auth с CSRF и временные лимиты запросов. Профили, приватные сохраняемые текстовые сообщения и интеграция frontend с API реализованы. Realtime, загрузка аватаров, вложения, production-cache и настройка proxy остаются будущими задачами.
 
-> **Статус проекта:** реализованы основа Django, регистрация с одноразовыми пригласительными кодами и API сессионной авторизации. Frontend на Next.js остаётся прототипом переписки с локальным состоянием и переводом интерфейса на английский и русский. Сохранение сообщений, профили и управление аватарками пока не реализованы.
+> **Статус проекта:** реализованы регистрация по приглашениям, сессионная авторизация, временные лимиты auth-запросов, профили, приватные диалоги один на один и сохранение текстовых сообщений. Frontend на Next.js поддерживает вход и регистрацию, редактирование профиля, список диалогов и историю/отправку сообщений на английском и русском языках. Загрузка аватаров, realtime-доставка, вложения и ручная проверка в браузере пока не завершены.
 
 ## 1. Project goals / Цели проекта
 
@@ -98,9 +98,9 @@ Backend является источником истины для авториз
 
 ### Database
 
-The current database stores Django users and invitation-code records. Persistent profiles, conversations, and messages are planned and are not implemented yet.
+The database stores Django users and invitation codes, one profile per user, private one-to-one conversations, and text messages. The profile migration creates a profile row for every existing user with empty display name/description and English as the default preference; it does not rewrite user or invitation rows. The messaging migration creates new tables and indexes only. Reversing the profile migration drops its new profile table and profile data, while leaving user and invitation tables intact. Review the manual verification steps below before applying migrations to an existing local database.
 
-Сейчас в базе хранятся пользователи Django и записи пригласительных кодов. Постоянные профили, диалоги и сообщения пока не реализованы и остаются в планах.
+В базе хранятся пользователи Django и приглашения, отдельный профиль пользователя, приватные диалоги один на один и текстовые сообщения. Миграция профилей создаёт строки профиля существующим пользователям с пустыми отображаемым именем и описанием и языком `en` по умолчанию; она не меняет строки пользователей и приглашений. Миграция переписки добавляет только новые таблицы и индексы. Откат миграции профиля удалит новую таблицу профилей и её данные, но не таблицы пользователей и приглашений.
 
 PostgreSQL хранит структурированные данные: пользователей, профили, пригласительные коды, диалоги, сообщения и другие записи по мере реализации функций.
 
@@ -158,11 +158,23 @@ DevChat должен поддерживать **английский и русс
 - Не создавать отдельные копии страниц для каждого языка.
 - Не размещать новые пользовательские надписи напрямую в компонентах, если они должны находиться в переводах.
 
-The current implementation uses a small in-repository dictionary and React state; it does not add a localization dependency. Browser preferences are read client-side, while the server and hydration snapshots both use English to avoid mismatched initial markup. Only an explicit selector change writes the saved preference. User-authored sample messages are left as entered. The account preference synchronization policy remains open until authenticated profiles exist.
+The current implementation uses a small in-repository dictionary and React state; it does not add a localization dependency. Browser preferences are read client-side, while the server and hydration snapshots both use English to avoid mismatched initial markup. Before sign-in, the explicit language selector persists the preference locally; after sign-in, the profile preference is synchronized with the interface. User-authored messages are left as entered.
 
 Текущая реализация использует небольшой словарь в репозитории и состояние React без дополнительной библиотеки. Настройки браузера читаются на клиенте, а серверный и гидратационный снимки используют английский язык, чтобы избежать расхождений начальной разметки. Сохранённое значение записывается только при явном переключении в селекторе. Примеры пользовательских сообщений остаются без изменений. Синхронизацию настройки с аккаунтом нужно определить после появления авторизованных профилей.
 
 ## 6. Accounts and profiles / Аккаунты и профили
+
+The Next.js frontend provides `/login` and `/register`. Registration requires a one-time invitation and creates the account without automatically starting a session; the user then signs in. Authenticated sessions are restored through `/api/accounts/me/`, and the chat redirects anonymous users to sign-in. The session cookie remains HttpOnly; no password or auth token is stored in browser local storage.
+
+Authenticated users can read and update their own display name, description, and preferred language using `GET /api/accounts/profile/` and `PATCH /api/accounts/profile/update/`. `GET /api/accounts/users/` lists active users and `GET /api/accounts/users/<id>/` returns public profile details. Avatar upload is not implemented.
+
+Пользователь после входа может читать и менять собственное отображаемое имя, описание и язык через `GET /api/accounts/profile/` и `PATCH /api/accounts/profile/update/`. `GET /api/accounts/users/` возвращает список активных пользователей, а `GET /api/accounts/users/<id>/` — публичные данные профиля. Загрузка аватаров не реализована.
+
+Authentication endpoints apply fixed-window request limits: login allows 10 attempts per minute for an IP and username pair and 30 attempts per minute per IP; registration allows 5 attempts per hour per IP. Excess requests receive `429` and `Retry-After`. The default Django cache is process-local, so production deployments with multiple workers must configure a shared cache backend. Limits use `REMOTE_ADDR`; behind a reverse proxy this may be the proxy address for every visitor and cause them to share one limit. Configure trusted client-address handling at the deployment boundary before exposing the service. Forwarded headers are not trusted by this code.
+
+Фронтенд Next.js предоставляет страницы `/login` и `/register`. Для регистрации нужен одноразовый код приглашения; после создания аккаунта пользователь входит отдельно. Сессия восстанавливается через `/api/accounts/me/`, а неавторизованный пользователь перенаправляется со страницы прототипа чата на вход. Cookie сессии остаётся HttpOnly; пароль и токен авторизации не сохраняются в localStorage.
+
+Для auth endpoint-ов действуют ограничения на фиксированное окно: до 10 попыток входа в минуту для сочетания IP и имени пользователя, до 30 попыток в минуту с одного IP и до 5 попыток регистрации в час с одного IP. Превышение возвращает `429` и `Retry-After`. Стандартный cache Django хранит данные в памяти процесса, поэтому production с несколькими workers требует общего cache backend. Лимиты используют `REMOTE_ADDR`; за reverse proxy это может быть адрес прокси для всех посетителей, и тогда лимит будет общим. До публикации сервиса настройте безопасное определение адреса клиента на границе инфраструктуры. Заголовки `X-Forwarded-*` код не считает доверенными.
 
 ### Registration
 
@@ -221,6 +233,8 @@ Before every state-changing request, including registration and login, the clien
 
 The local frontend and API use different ports. For cookie-based requests, use a consistent host name on both sides (for example, `localhost`) and send `credentials: "include"`. Local frontend origins are explicitly listed in CORS and CSRF settings. For a deployed cross-origin frontend, configure its exact origin in `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS`; do not use wildcard origins.
 
+Login and registration requests are rate limited using Django's cache: 10 login attempts per minute for an IP/username pair, 30 per minute for an IP, and 5 registrations per hour for an IP. Limits are fixed-window counters and return `429` with `Retry-After`. The default cache is in-process and is suitable only for single-process development; multi-worker deployments need a shared cache. Behind a reverse proxy, `REMOTE_ADDR` may identify the proxy for all clients, so the current limits can throttle them together. Configure trusted client-address handling at the deployment boundary before exposing the service; this application does not trust forwarded headers.
+
 Invitations are created through Django Admin or development tooling. There is no public invitation-generation endpoint.
 
 API сессий использует стандартную авторизацию Django. Перед каждым изменяющим запросом клиент получает CSRF-токен, сохраняет cookie и отправляет токен в заголовке `X-CSRFToken` вместе с cookie сессии. При входе CSRF-токен обновляется. Endpoint текущего пользователя возвращает `401` для анонимных запросов. Публичного API для создания приглашений нет.
@@ -262,7 +276,7 @@ Planned messaging features:
 7. Typing indicators and delivery/read statuses.
 8. Attachments with strict file type and size restrictions.
 
-The frontend currently contains a local-state chat prototype. Its sample messages are not persistent and must not be represented as real backend-backed conversations.
+The frontend uses backend-backed private conversations and persistent text messages. Messaging uses HTTP; realtime delivery, attachments, editing, and deletion are not implemented.
 
 Текущий интерфейс содержит прототип переписки с данными в React state. Эти сообщения не сохраняются в базе и не должны описываться как полноценные диалоги.
 
@@ -390,11 +404,7 @@ Start-Service postgresql-x64-18
 
 ### Local API configuration
 
-The frontend currently defaults to:
-
-`http://127.0.0.1:8000/api`
-
-For session cookies during local development, the frontend and backend should use the same host name. To use `localhost`, set `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local`. Use `credentials: "include"` for browser API requests. Keep local settings out of committed secret files.
+The frontend uses `NEXT_PUBLIC_API_URL` when set. Otherwise, it targets port `8000` on the hostname used to open the frontend, so `localhost:3000` pairs with `localhost:8000` and `127.0.0.1:3000` pairs with `127.0.0.1:8000`. Set `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local` when you want to choose the backend host explicitly. Browser API requests use `credentials: "include"`. Keep local settings out of committed secret files.
 
 ## 11. API status / Статус API
 
@@ -407,10 +417,11 @@ For session cookies during local development, the frontend and backend should us
 | `POST /api/accounts/logout/` | End the current Django session | Implemented |
 | `GET /api/accounts/me/` | Return the current authenticated user | Implemented |
 | `GET /api/accounts/dev/register/` | Local browser registration test form; available only with `DEBUG=True` | Development only |
-| Profile endpoints | Read and update profiles | Planned |
+| `POST /api/accounts/login/` and `POST /api/accounts/register/` | Fixed-window request limits; see account security notes | Implemented |
+| `GET /api/accounts/profile/` and `PATCH /api/accounts/profile/update/` | Read/update current user profile and language | Implemented |
 | Avatar endpoints | Upload, replace, and remove avatars | Planned |
-| Conversation endpoints | Create and retrieve conversations | Planned |
-| Message endpoints | Send and manage messages | Planned |
+| `GET /api/messaging/` and `POST /api/messaging/` | List or create private one-to-one conversations | Implemented |
+| `GET /api/messaging/<id>/messages/` and `POST /api/messaging/<id>/messages/` | Retrieve/send text messages (members only; GET supports `before=<message_id>` pagination) | Implemented |
 
 Endpoint status must reflect verified code, not the intended roadmap.
 
@@ -419,6 +430,60 @@ For local registration testing, open `http://127.0.0.1:8000/api/accounts/dev/reg
 Для локальной проверки регистрации откройте `http://127.0.0.1:8000/api/accounts/dev/register/`, когда Django запущен с `DEBUG=True`. Сначала создайте приглашение в Django Admin. Форма использует тот же API регистрации с защитой CSRF и недоступна при `DEBUG=False`; это не production-страница регистрации.
 
 
+
+## Manual verification in Windows PowerShell / Ручная проверка в Windows PowerShell
+
+The following migration command changes the configured local database. It is documented for you to run deliberately; it was not run during this task. Before applying it, confirm `backend/.env` points to the intended development database and make a backup if it contains data you need to retain. Never point this command at production.
+
+Следующая команда миграции изменяет выбранную локальную базу данных. Здесь она приведена для осознанного запуска вами; во время этой задачи она не выполнялась. До запуска проверьте, что `backend/.env` указывает на нужную базу разработки, и сделайте резервную копию важных данных. Не запускайте её для production.
+
+From the repository root, in Terminal 1:
+
+```powershell
+if (-not (Test-Path backend\.venv\Scripts\Activate.ps1)) { python -m venv backend\.venv }
+.\backend\.venv\Scripts\Activate.ps1
+python -m pip install -r backend\requirements.txt
+if (-not (Test-Path backend\.env)) { Copy-Item backend\.env.example backend\.env }
+# Review backend\.env and confirm DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT.
+python backend\manage.py showmigrations accounts messaging
+python backend\manage.py migrate --plan
+# Only when you intentionally approve changing the selected local database:
+python backend\manage.py migrate
+python backend\manage.py check
+python backend\manage.py runserver
+```
+
+Expected: `migrate --plan` lists the pending account profile and messaging migrations (plus any other unapplied project migrations); after your explicit local run, `showmigrations` marks them `[X]`, `check` reports no issues, and the server listens at `http://127.0.0.1:8000/`. The profile migration adds a profile for existing users with default values. The messaging migration adds empty conversation/message tables. Neither migration deletes or alters existing user, invite, or unrelated application rows. User deletion follows the declared cascade relationships and removes that user's profile/conversations/messages.
+
+Ожидается: `migrate --plan` показывает ожидающие миграции профилей и переписки (а также другие неприменённые миграции проекта); после вашего отдельного запуска `showmigrations` помечает их `[X]`, `check` не находит проблем, сервер слушает `http://127.0.0.1:8000/`. Первая миграция создаёт профили существующим пользователям со значениями по умолчанию. Вторая добавляет пустые таблицы диалогов и сообщений. Они не удаляют и не изменяют существующие строки пользователей, приглашений и несвязанных данных. При удалении пользователя объявленные каскадные связи удаляют его профиль, диалоги и сообщения.
+
+In Terminal 2, from the repository root:
+
+```powershell
+Set-Location frontend
+if (-not (Test-Path node_modules)) { npm install }
+npm run dev
+```
+
+Open `http://localhost:3000`. In Django Admin (`http://127.0.0.1:8000/admin/`), sign in with a superuser and create an unused invitation. If needed, create it with `python backend\manage.py createsuperuser` from Terminal 1 while the virtual environment is active.
+
+Manual flow and expected results:
+
+1. Register a second account at `http://localhost:3000/register` with the invitation; it succeeds once, and reuse/invalid invite is rejected. Sign in at `/login`; refreshing restores the session, logout returns to the sign-in screen.
+2. Sign in with two accounts in separate browser profiles (or one normal and one private window). In profile settings edit display name, description, and language; reload and sign back in to verify saved profile language is reflected. Avatar controls are not implemented.
+3. As account A, start a conversation with account B and send a text message. The dialog appears in the list. Refresh the page: the conversation and message remain. Sign in as B and verify the message is visible and a reply appears for A after refresh.
+4. Verify privacy: an unauthenticated browser is redirected to sign-in. Account C, which is not a conversation member, must not be able to retrieve that conversation or its messages; backend returns not found/denied. A user cannot create a conversation with themselves.
+5. Change interface language between English and Russian and exercise login, profile, conversation list, and sending. Unsupported first-visit browser language should fall back to English; a manually selected language should persist across reloads. Check a narrow/mobile viewport for usable layout.
+6. Open `http://127.0.0.1:8000/api/health/`; expect JSON with `"status": "ok"` and `"database": "connected"`.
+
+Инструкция для ручной проверки:
+
+1. Зарегистрируйте второй аккаунт на `http://localhost:3000/register` по приглашению: регистрация проходит один раз, повторное или неверное приглашение отклоняется. Войдите на `/login`; после обновления страницы сессия восстанавливается, выход возвращает на экран входа.
+2. Используйте два аккаунта в отдельных профилях браузера. Под каждым проверьте изменение отображаемого имени, описания и языка; после обновления сохранённые значения остаются. Загрузка аватара не реализована.
+3. Под аккаунтом A создайте диалог с B и отправьте текст. Диалог появится в списке; после обновления страницы диалог и сообщение сохраняются. Войдите как B и проверьте, что сообщение видно; отправьте ответ и обновите страницу A.
+4. Для проверки приватности создайте третий аккаунт C с отдельным приглашением. Неавторизованный пользователь перенаправляется на вход; аккаунт C не должен получить чужой диалог или сообщения. Нельзя создать диалог с самим собой.
+5. Проверьте английский и русский интерфейсы, переключение языка, вход, профиль и переписку. Неподдерживаемый язык браузера при первом посещении должен давать fallback на английский; выбранный язык сохраняется после обновления. Проверьте узкий экран.
+6. Откройте `http://127.0.0.1:8000/api/health/`; ожидается JSON со значениями `"status": "ok"` и `"database": "connected"`.
 
 ## 12. Roadmap / План разработки
 
@@ -447,32 +512,34 @@ The order can change when a dependency requires it, but each stage should have c
 - [x] Add tests for registration, invalid and reused invitations, duplicate usernames, password validation, authentication, and CSRF.
 - [x] Add a PostgreSQL concurrency test for single-use invitation consumption.
 - [x] Add a `DEBUG=True` browser registration form that uses the existing CSRF-protected API.
-- [ ] Add appropriate abuse protection for authentication endpoints.
+- [x] Add temporary cache-based limits for login and registration requests, with tests.
 
 ### Stage 3 — Profiles and localization
 
-- [ ] Define the user profile model and API.
-- [ ] Implement profile read/update permissions.
+- [x] Define the user profile model and API.
+- [x] Implement profile read/update permissions and language preference synchronization.
 - [ ] Implement safe avatar upload, replacement, and deletion.
 - [x] Add English and Russian translations for the current prototype interface.
 - [x] Implement browser language detection, manual selection, and local persistence for the prototype.
-- [ ] Synchronize language preference with the user profile after authentication is available.
-- [ ] Test localization fallback and profile access controls.
+- [x] Synchronize language preference with the user profile after authentication is available.
+- [x] Add tests for profile validation and access controls.
+- [ ] Manually verify localization fallback in the browser.
 
 ### Stage 4 — Private messaging
 
-- [ ] Define conversation and message models.
-- [ ] Implement private one-to-one conversations.
-- [ ] Implement message history and sending through the API.
-- [ ] Enforce conversation membership on every relevant request.
-- [ ] Add tests for messaging and access restrictions.
+- [x] Define conversation and message models.
+- [x] Implement private one-to-one conversations.
+- [x] Implement message history and sending through the API.
+- [x] Enforce conversation membership on conversation and message requests.
+- [x] Add tests for messaging and access restrictions.
 
 ### Stage 5 — Frontend integration
 
-- [ ] Replace sample chat data with backend data.
-- [ ] Add production Next.js registration and login screens; the existing Django registration form is development-only.
-- [ ] Add profile settings and avatar controls.
-- [ ] Add conversation list and message history.
+- [x] Replace sample chat data with backend conversations and messages.
+- [x] Add Next.js registration and login screens using the Django session API.
+- [ ] Verify the frontend authentication flow manually in English and Russian against a running backend.
+- [x] Add profile settings (avatar controls remain incomplete).
+- [x] Add conversation list and message history.
 - [ ] Add light and dark themes.
 - [ ] Verify responsive layouts and both interface languages.
 
@@ -496,12 +563,13 @@ The order can change when a dependency requires it, but each stage should have c
 
 ## 13. Current limitations / Текущие ограничения
 
-- Chat messages are currently prototype data held in frontend state.
-- Production Next.js registration and login screens are not implemented. A separate Django registration test form is available only with `DEBUG=True`.
-- Authentication endpoints do not yet have rate limiting or brute-force protection.
-- User profile management and avatar uploads are planned.
-- Localization currently covers the prototype's interface labels; dates, fixture previews, backend responses, and future screens are not fully localized.
-- The frontend uses local storage for language preference until an authenticated profile preference exists.
+- Avatar upload and management are not implemented.
+- Messaging is persistent HTTP-based text messaging; WebSocket realtime delivery, edit/delete, attachments, typing indicators, and read/delivery states are not implemented.
+- A separate Django registration test form is available only with `DEBUG=True`; the production-facing registration and login UI is in Next.js.
+- Authentication requests have temporary rate limits. Production must configure a shared cache and safe client IP handling at its proxy boundary; distributed attacks and infrastructure-specific controls still need review.
+- Profile fields (display name, description, preferred language) are stored per account; avatars are not implemented.
+- Localization covers current interface labels; dates, backend responses, and future screens are not fully localized.
+- The frontend uses local storage for language preference before sign-in; the authenticated profile preference is synchronized after login.
 - Local development defaults to `DEBUG=True`; production must set `DJANGO_DEBUG=False`, a secret `DJANGO_SECRET_KEY`, allowed hosts, exact CORS/CSRF frontend origins, and HTTPS.
 - Real-time messaging and attachments are planned.
 - End-to-end encryption is not implemented or promised.
