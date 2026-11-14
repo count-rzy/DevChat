@@ -1,10 +1,13 @@
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+export function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  const hostname = typeof window === "undefined" ? "127.0.0.1" : window.location.hostname;
+  return `http://${hostname}:8000/api`;
+}
 
 export async function checkBackendHealth() {
   try {
-    const response = await fetch(`${API_URL}/health/`, {
+    const response = await fetch(`${getApiBaseUrl()}/health/`, {
       method: "GET",
       cache: "no-store",
     });

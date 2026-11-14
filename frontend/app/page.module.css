@@ -59,6 +59,33 @@
   font-weight: 900;
 }
 
+.brandIconImage {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+.authLoading {
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  place-content: center;
+  gap: 12px;
+  background: #0c0e13;
+  color: #e6eaf2;
+  text-align: center;
+}
+
+.authLoading button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #384568;
+  border-radius: 9px;
+  background: #252e48;
+  color: #e6eaf2;
+  cursor: pointer;
+}
+
 .brandAccent {
   color: var(--accent);
 }
@@ -276,6 +303,10 @@
   background: #313b56;
 }
 
+.profileButton { border: 0; cursor: pointer; }
+.profileInfoButton { display: flex; min-width: 0; flex: 1; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.profileInfoButton:focus-visible, .profileButton:focus-visible, .newConversationButton:focus-visible, .chatItem:focus-visible, .userChoice:focus-visible, .loadOlder:focus-visible, .emptyAction:focus-visible { outline: 2px solid #8da4ff; outline-offset: 3px; }
+
 .profileInfo {
   display: flex;
   flex: 1;
@@ -380,6 +411,10 @@
   overflow-y: auto;
   padding: 28px clamp(18px, 7vw, 100px);
 }
+
+.emptyConversation { margin: auto; color: #858da0; font-size: 13px; text-align: center; }
+.loadOlder { align-self: center; padding: 8px 13px; border: 1px solid #30374d; border-radius: 20px; background: #151a24; color: #aebaf2; cursor: pointer; }
+.loadOlder:disabled { opacity: .6; cursor: wait; }
 
 .dayDivider {
   display: flex;
@@ -495,6 +530,8 @@
   background: #a0b0ff;
 }
 
+.sendButton:disabled { cursor: not-allowed; opacity: .55; }
+
 .sendButton svg {
   width: 19px;
   height: 19px;
@@ -511,6 +548,33 @@
   margin-right: 5px;
   color: #8d9df0;
 }
+
+.inlineError { color: #ffaaa7 !important; }
+.emptyState { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 30px; text-align: center; }
+.emptyState img { object-fit: contain; opacity: .88; }
+.emptyState h1 { max-width: 430px; margin: 0; color: #aab4c3; font-size: 17px; font-weight: 500; line-height: 1.5; }
+.emptyAction, .saveButton { min-height: 42px; padding: 0 17px; border: 0; border-radius: 10px; background: #8198f8; color: #10162c; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.modalBackdrop { position: fixed; z-index: 5; inset: 0; display: grid; place-items: center; padding: 20px; background: #05070bd9; backdrop-filter: blur(8px); }
+.modal { display: flex; width: min(100%, 470px); max-height: min(680px, 86dvh); flex-direction: column; padding: 22px; border: 1px solid #ffffff18; border-radius: 18px; background: #141922; color: var(--text); box-shadow: 0 25px 90px #0009; }
+.modalHeader { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+.modalHeader h2 { margin: 0; font-size: 20px; letter-spacing: -.4px; }
+.modalEyebrow { margin: 0 0 5px; color: #8298f5; font-size: 10px; font-weight: 750; letter-spacing: 1.2px; text-transform: uppercase; }
+.modalSearch { height: 42px; flex: 0 0 auto; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; outline: 0; background: #0d1016; color: var(--text); font: inherit; font-size: 13px; }
+.modalSearch:focus, .profileForm input:focus, .profileForm textarea:focus, .profileForm select:focus { border-color: #8198f8; box-shadow: 0 0 0 3px #8198f824; }
+.userChoices { min-height: 90px; overflow-y: auto; margin: 12px -5px -5px; padding: 0 5px; }
+.userChoice { display: flex; width: 100%; align-items: center; gap: 12px; padding: 11px 8px; border: 0; border-radius: 10px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.userChoice:hover { background: #1c2230; }
+.userChoice > span:nth-child(2) { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
+.userChoice strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.userChoice small { color: var(--muted); font-size: 11px; }
+.choiceArrow { color: #8298f5; font-size: 24px; }
+.profileForm { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.profileForm label { display: flex; flex-direction: column; gap: 7px; color: #ccd4e2; font-size: 12px; font-weight: 650; }
+.profileForm input, .profileForm textarea, .profileForm select { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; outline: 0; background: #0d1016; color: var(--text); font: inherit; font-size: 13px; resize: vertical; }
+.profileForm textarea { min-height: 90px; }
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 3px; }
+.cancelButton { min-height: 42px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: #c1cada; font: inherit; font-size: 12px; cursor: pointer; }
+.saveButton:disabled { opacity: .6; cursor: wait; }
 
 @media (max-width: 720px) {
   .sidebar {
@@ -534,7 +598,7 @@
 
 @media (max-width: 520px) {
   .sidebar {
-    flex-basis: 76px;
+    flex-basis: 120px;
     align-items: center;
   }
 
@@ -549,12 +613,12 @@
   }
 
   .brand > span,
-  .sidebarHeader > .iconButton,
+  .sidebarHeader > .iconButton:not(.newConversationButton),
   .searchBox,
   .sectionLabel,
   .chatInfo,
-  .profileInfo,
-  .profileActions > .iconButton {
+  .profileInfoButton,
+  .profileActions > .iconButton:not(.logoutButton) {
     display: none;
   }
 
@@ -564,7 +628,7 @@
   }
 
   .chatItem {
-    justify-content: center;
+    justify-content: space-between;
     padding: 10px 0;
   }
 

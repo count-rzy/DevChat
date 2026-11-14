@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "./lib/auth-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,12 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "DevChat",
   description: "Private messaging for invited users.",
+  icons: { icon: "/branding/devchat-avatar.png", apple: "/branding/devchat-avatar.png" },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+      <body><AuthProvider>{children}</AuthProvider></body>
     </html>
   );
 }
