@@ -4,13 +4,13 @@
 
 **DevChat** — приватный веб-мессенджер для небольшой группы пользователей с регистрацией по приглашениям. Проект разрабатывается с нуля для личного использования и в качестве full-stack проекта в GitHub-портфолио.
 
-> **Project status:** Django invite registration, session authentication, temporary auth request limits, user profiles, private one-to-one conversations, and persistent text messages are implemented. The Next.js frontend includes English/Russian authentication, profile editing, conversation lists, and message history/sending connected to the backend. Avatar upload, realtime delivery, attachments, and manual browser verification remain incomplete.
+> **Project status:** Django invite registration, session authentication, temporary auth request limits, user profiles and avatars, private one-to-one conversations, persistent text messages, authenticated WebSocket delivery, typing indicators, read cursors, unread counts, editing, soft deletion, replies, and reactions are implemented. Attachments and manual browser verification remain incomplete.
 
-> **Development wave status:** The foundation and account/authentication work is complete, including session auth with CSRF and temporary request limits. Profiles, private persistent text messaging, and frontend API integration are implemented. Realtime, avatar uploads, attachments, and production cache/proxy configuration remain future work.
+> **Development wave status:** The foundation, accounts, profiles and private messaging work is implemented. Active clients receive messages and message-operation updates over authenticated WebSockets; typing and read events are temporary/live, while message history and read cursors persist in PostgreSQL. Attachments and production cache/proxy configuration remain future work.
 
-> Статус разработки: основа и аккаунты с авторизацией завершены, включая session-auth с CSRF и временные лимиты запросов. Профили, приватные сохраняемые текстовые сообщения и интеграция frontend с API реализованы. Realtime, загрузка аватаров, вложения, production-cache и настройка proxy остаются будущими задачами.
+> Статус разработки: реализованы основа, аккаунты, профили и приватная переписка. Активные клиенты получают новые сообщения и обновления по WebSocket; индикаторы набора, курсоры прочтения, непрочитанные сообщения, редактирование, мягкое удаление, ответы и реакции реализованы. Вложения, production-cache и настройка proxy остаются будущими задачами.
 
-> **Статус проекта:** реализованы регистрация по приглашениям, сессионная авторизация, временные лимиты auth-запросов, профили, приватные диалоги один на один и сохранение текстовых сообщений. Frontend на Next.js поддерживает вход и регистрацию, редактирование профиля, список диалогов и историю/отправку сообщений на английском и русском языках. Загрузка аватаров, realtime-доставка, вложения и ручная проверка в браузере пока не завершены.
+> **Статус проекта:** реализованы регистрация по приглашениям, сессионная авторизация, профили и аватары, приватные диалоги, сохранение и WebSocket-доставка сообщений, набор текста, статусы прочтения и непрочитанные счётчики, редактирование, мягкое удаление, ответы и реакции. Интерфейс на Next.js поддерживает английский и русский языки. Вложения и ручная проверка в браузере пока не завершены.
 
 ## 1. Project goals / Цели проекта
 
@@ -40,10 +40,10 @@ The application is not intended to be a public social network. Features should b
 |---|---|
 | Frontend | Next.js 16.4.3, React 19.3.0, JavaScript |
 | Styling | CSS Modules, global CSS |
-| Backend | Python, Django 5.2.18, Django REST Framework 3.18.3 |
+| Backend | Python, Django 5.2.18, Django REST Framework 3.18.3, Django Channels 4.3.2 |
 | Database | PostgreSQL 18 |
-| Realtime | Django Channels, WebSockets — planned |
-| Realtime infrastructure | Redis — only if needed |
+| Realtime | Django Channels 4.3.2 and authenticated WebSockets |
+| Realtime infrastructure | In-memory layer for single-process development; a shared Redis layer is required for multi-process deployment |
 | Version control | Git, GitHub |
 
 TypeScript and Tailwind CSS are not part of the current project requirements. Do not introduce them without explicit approval.
@@ -98,7 +98,7 @@ Backend является источником истины для авториз
 
 ### Database
 
-The database stores Django users and invitation codes, one profile per user, private one-to-one conversations, and text messages. The profile migration creates a profile row for every existing user with empty display name/description and English as the default preference; it does not rewrite user or invitation rows. The messaging migration creates new tables and indexes only. Reversing the profile migration drops its new profile table and profile data, while leaving user and invitation tables intact. Review the manual verification steps below before applying migrations to an existing local database.
+`accounts.0002_userprofile` creates a profile row for every existing user with empty display name/description and English as the default preference; it does not rewrite user or invitation rows. `messaging.0001_initial` creates conversation/message tables and indexes. `accounts.0003_userprofile_avatar` adds a nullable file reference. `messaging.0002` adds edit/delete timestamps and reply references; `messaging.0003` allows empty message content for soft-delete tombstones; `messaging.0004` adds per-user conversation read cursors. These changes add fields/tables and do not rewrite or delete existing user or invitation rows. Review the manual verification steps before applying migrations locally.
 
 В базе хранятся пользователи Django и приглашения, отдельный профиль пользователя, приватные диалоги один на один и текстовые сообщения. Миграция профилей создаёт строки профиля существующим пользователям с пустыми отображаемым именем и описанием и языком `en` по умолчанию; она не меняет строки пользователей и приглашений. Миграция переписки добавляет только новые таблицы и индексы. Откат миграции профиля удалит новую таблицу профилей и её данные, но не таблицы пользователей и приглашений.
 
@@ -108,7 +108,7 @@ PostgreSQL хранит структурированные данные: пол�
 
 User-uploaded avatars and attachments should be stored as files, not as Git repository contents.
 
-For local development, Django media storage may use a local `media/` directory. The database should store file references and related metadata rather than image binaries. Production storage can be selected later without coupling profile logic to a particular provider.
+For local development, avatars are normalized to WebP and stored under `backend/media/avatars/` with random filenames. PostgreSQL stores only the file reference. Avatar responses are served through an authenticated endpoint and use private no-store caching; do not expose `MEDIA_ROOT` as a public static directory. Production must use persistent private media storage and preserve authenticated access through a protected media endpoint or an equivalent access-controlled storage design.
 
 Пользовательские аватарки и вложения должны храниться как файлы, а не в репозитории Git.
 
@@ -166,7 +166,7 @@ The current implementation uses a small in-repository dictionary and React state
 
 The Next.js frontend provides `/login` and `/register`. Registration requires a one-time invitation and creates the account without automatically starting a session; the user then signs in. Authenticated sessions are restored through `/api/accounts/me/`, and the chat redirects anonymous users to sign-in. The session cookie remains HttpOnly; no password or auth token is stored in browser local storage.
 
-Authenticated users can read and update their own display name, description, and preferred language using `GET /api/accounts/profile/` and `PATCH /api/accounts/profile/update/`. `GET /api/accounts/users/` lists active users and `GET /api/accounts/users/<id>/` returns public profile details. Avatar upload is not implemented.
+Authenticated users can read and update their own display name, description, and preferred language using `GET /api/accounts/profile/` and `PATCH /api/accounts/profile/update/`. `GET /api/accounts/users/` lists active users and `GET /api/accounts/users/<id>/` returns public profile details. Owners upload/replace an avatar with `POST /api/accounts/profile/avatar/` and remove it with `DELETE` on the same endpoint. Authenticated users retrieve active users’ avatars through `GET /api/accounts/users/<id>/avatar/`.
 
 Пользователь после входа может читать и менять собственное отображаемое имя, описание и язык через `GET /api/accounts/profile/` и `PATCH /api/accounts/profile/update/`. `GET /api/accounts/users/` возвращает список активных пользователей, а `GET /api/accounts/users/<id>/` — публичные данные профиля. Загрузка аватаров не реализована.
 
@@ -276,7 +276,7 @@ Planned messaging features:
 7. Typing indicators and delivery/read statuses.
 8. Attachments with strict file type and size restrictions.
 
-The frontend uses backend-backed private conversations and persistent text messages. Messaging uses HTTP; realtime delivery, attachments, editing, and deletion are not implemented.
+The frontend uses backend-backed private conversations and persistent text messages. HTTP remains the source of truth for message persistence; authenticated WebSockets deliver message and read-cursor updates to conversation participants. Reconnection and history reconciliation are enabled, with periodic HTTP history sync while the socket is unavailable. Editing, soft deletion, replies, reactions, typing indicators, and read/unread state are implemented. Attachments are not implemented.
 
 Текущий интерфейс содержит прототип переписки с данными в React state. Эти сообщения не сохраняются в базе и не должны описываться как полноценные диалоги.
 
@@ -419,9 +419,14 @@ The frontend uses `NEXT_PUBLIC_API_URL` when set. Otherwise, it targets port `80
 | `GET /api/accounts/dev/register/` | Local browser registration test form; available only with `DEBUG=True` | Development only |
 | `POST /api/accounts/login/` and `POST /api/accounts/register/` | Fixed-window request limits; see account security notes | Implemented |
 | `GET /api/accounts/profile/` and `PATCH /api/accounts/profile/update/` | Read/update current user profile and language | Implemented |
-| Avatar endpoints | Upload, replace, and remove avatars | Planned |
-| `GET /api/messaging/` and `POST /api/messaging/` | List or create private one-to-one conversations | Implemented |
-| `GET /api/messaging/<id>/messages/` and `POST /api/messaging/<id>/messages/` | Retrieve/send text messages (members only; GET supports `before=<message_id>` pagination) | Implemented |
+| `POST /api/accounts/profile/avatar/` and `DELETE /api/accounts/profile/avatar/` | Upload/replace or remove the authenticated user avatar | Implemented |
+| `GET /api/accounts/users/<id>/avatar/` | Stream an active user avatar to authenticated users | Implemented |
+| `GET /api/conversations/` and `POST /api/conversations/` | List or create private one-to-one conversations; list includes per-user unread counts/read cursor | Implemented |
+| `GET /api/conversations/<id>/messages/` and `POST /api/conversations/<id>/messages/` | Retrieve/send text messages (members only; GET supports `before=<message_id>` pagination) | Implemented |
+| `PATCH` and `DELETE /api/conversations/<id>/messages/<message_id>/` | Edit or soft-delete the sender's message | Implemented |
+| `POST /api/conversations/<id>/messages/<message_id>/reactions/` | Toggle an allowed reaction as a conversation member | Implemented |
+| `POST /api/conversations/<id>/read/` | Advance the authenticated user's read cursor and return unread count | Implemented |
+| `ws/conversations/<id>/` | Authenticated private message, typing, and read events; requires a valid session, an allowed origin, and conversation membership | Implemented |
 
 Endpoint status must reflect verified code, not the intended roadmap.
 
@@ -453,9 +458,9 @@ python backend\manage.py check
 python backend\manage.py runserver
 ```
 
-Expected: `migrate --plan` lists the pending account profile and messaging migrations (plus any other unapplied project migrations); after your explicit local run, `showmigrations` marks them `[X]`, `check` reports no issues, and the server listens at `http://127.0.0.1:8000/`. The profile migration adds a profile for existing users with default values. The messaging migration adds empty conversation/message tables. Neither migration deletes or alters existing user, invite, or unrelated application rows. User deletion follows the declared cascade relationships and removes that user's profile/conversations/messages.
+Expected: `migrate --plan` lists pending account profile/avatar and messaging migrations (plus any other unapplied project migrations); after your explicit local run, `showmigrations` marks them `[X]`, `check` reports no issues, and the ASGI-enabled development server listens at `http://127.0.0.1:8000/`. The profile migration adds a profile for existing users with default values. The messaging migration adds empty conversation/message tables. The avatar migration adds a nullable file reference to profiles and does not alter stored user data or existing files. These migrations do not delete or alter existing user, invite, or unrelated application rows. User deletion follows the declared cascade relationships and removes that user's profile/conversations/messages.
 
-Ожидается: `migrate --plan` показывает ожидающие миграции профилей и переписки (а также другие неприменённые миграции проекта); после вашего отдельного запуска `showmigrations` помечает их `[X]`, `check` не находит проблем, сервер слушает `http://127.0.0.1:8000/`. Первая миграция создаёт профили существующим пользователям со значениями по умолчанию. Вторая добавляет пустые таблицы диалогов и сообщений. Они не удаляют и не изменяют существующие строки пользователей, приглашений и несвязанных данных. При удалении пользователя объявленные каскадные связи удаляют его профиль, диалоги и сообщения.
+Ожидается: `migrate --plan` показывает ожидающие миграции профиля, аватара и переписки (а также другие неприменённые миграции проекта); после вашего отдельного запуска `showmigrations` помечает их `[X]`, `check` не находит проблем, ASGI-сервер слушает `http://127.0.0.1:8000/`. Миграция профилей создаёт профили существующим пользователям со значениями по умолчанию. Миграция переписки добавляет пустые таблицы диалогов и сообщений. Миграция аватаров добавляет nullable-ссылку на файл и не изменяет существующие данные или файлы. Эти миграции не удаляют и не изменяют строки пользователей, приглашений и несвязанных данных. При удалении пользователя объявленные каскадные связи удаляют его профиль, диалоги и сообщения.
 
 In Terminal 2, from the repository root:
 
@@ -470,10 +475,10 @@ Open `http://localhost:3000`. In Django Admin (`http://127.0.0.1:8000/admin/`), 
 Manual flow and expected results:
 
 1. Register a second account at `http://localhost:3000/register` with the invitation; it succeeds once, and reuse/invalid invite is rejected. Sign in at `/login`; refreshing restores the session, logout returns to the sign-in screen.
-2. Sign in with two accounts in separate browser profiles (or one normal and one private window). In profile settings edit display name, description, and language; reload and sign back in to verify saved profile language is reflected. Avatar controls are not implemented.
-3. As account A, start a conversation with account B and send a text message. The dialog appears in the list. Refresh the page: the conversation and message remain. Sign in as B and verify the message is visible and a reply appears for A after refresh.
-4. Verify privacy: an unauthenticated browser is redirected to sign-in. Account C, which is not a conversation member, must not be able to retrieve that conversation or its messages; backend returns not found/denied. A user cannot create a conversation with themselves.
-5. Change interface language between English and Russian and exercise login, profile, conversation list, and sending. Unsupported first-visit browser language should fall back to English; a manually selected language should persist across reloads. Check a narrow/mobile viewport for usable layout.
+2. Sign in with two accounts in separate browser profiles (or one normal and one private window). In profile settings edit display name, description, and language; upload, replace, and remove an avatar; reload and sign back in to verify saved profile language is reflected.
+3. As account A, start a conversation with account B and send a text message. Verify it appears for B without refreshing. Reply, edit, soft-delete, and react to messages; confirm changes sync and deleted replies show a tombstone. Type and confirm the temporary typing indicator; open/leave conversations and verify unread counts/read state.
+4. Verify privacy: an unauthenticated browser is redirected to sign-in. Account C, which is not a conversation member, must not be able to retrieve the conversation, messages, read cursor, or avatar; backend returns not found/denied. A user cannot create a conversation with themselves.
+5. Change interface language between English and Russian and exercise login, profile, conversation list, and messaging features. Unsupported first-visit browser language should fall back to English; a manually selected language should persist across reloads. Check keyboard interaction and a narrow/mobile viewport.
 6. Open `http://127.0.0.1:8000/api/health/`; expect JSON with `"status": "ok"` and `"database": "connected"`.
 
 Инструкция для ручной проверки:
@@ -538,17 +543,17 @@ The order can change when a dependency requires it, but each stage should have c
 - [x] Replace sample chat data with backend conversations and messages.
 - [x] Add Next.js registration and login screens using the Django session API.
 - [ ] Verify the frontend authentication flow manually in English and Russian against a running backend.
-- [x] Add profile settings (avatar controls remain incomplete).
+- [x] Add profile settings and avatar controls.
 - [x] Add conversation list and message history.
 - [ ] Add light and dark themes.
 - [ ] Verify responsive layouts and both interface languages.
 
 ### Stage 6 — Realtime and attachments
 
-- [ ] Integrate Django Channels and WebSockets.
-- [ ] Add real-time message delivery.
-- [ ] Add typing indicators.
-- [ ] Add delivery and read statuses.
+- [x] Integrate Django Channels and authenticated WebSockets for private message delivery.
+- [x] Add real-time message delivery and message-operation updates.
+- [x] Add temporary typing indicators.
+- [x] Persist per-user read cursors and show read state/unread counts. No device-delivery status is claimed.
 - [ ] Add attachment upload with file restrictions.
 - [ ] Introduce Redis only if required by the chosen deployment architecture.
 
@@ -563,15 +568,15 @@ The order can change when a dependency requires it, but each stage should have c
 
 ## 13. Current limitations / Текущие ограничения
 
-- Avatar upload and management are not implemented.
-- Messaging is persistent HTTP-based text messaging; WebSocket realtime delivery, edit/delete, attachments, typing indicators, and read/delivery states are not implemented.
+- Avatar upload, replacement, removal, display, and authenticated retrieval are implemented; production private media storage still requires deployment configuration.
+- Messages persist through the HTTP API and are delivered to active members over authenticated WebSockets. Editing, soft deletion, replies, reactions, temporary typing indicators, read cursors, and unread counts are implemented. The UI shows a gray check for a server-saved own message and blue double checks after the other participant's read cursor reaches it; this is not a device-delivery receipt. Attachments are not implemented.
 - A separate Django registration test form is available only with `DEBUG=True`; the production-facing registration and login UI is in Next.js.
 - Authentication requests have temporary rate limits. Production must configure a shared cache and safe client IP handling at its proxy boundary; distributed attacks and infrastructure-specific controls still need review.
-- Profile fields (display name, description, preferred language) are stored per account; avatars are not implemented.
+- Profile fields and an optional avatar file reference are stored per account; uploaded images are normalized and served only through the authenticated avatar endpoint.
 - Localization covers current interface labels; dates, backend responses, and future screens are not fully localized.
 - The frontend uses local storage for language preference before sign-in; the authenticated profile preference is synchronized after login.
 - Local development defaults to `DEBUG=True`; production must set `DJANGO_DEBUG=False`, a secret `DJANGO_SECRET_KEY`, allowed hosts, exact CORS/CSRF frontend origins, and HTTPS.
-- Real-time messaging and attachments are planned.
+- Attachments and device-delivery receipts remain planned.
 - End-to-end encryption is not implemented or promised.
 - Production hosting and storage have not yet been selected.
 
