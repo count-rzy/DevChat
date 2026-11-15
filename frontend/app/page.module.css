@@ -217,6 +217,8 @@
   font-weight: 700;
 }
 
+.avatarImage { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+
 .onlineDot {
   position: absolute;
   right: -2px;
@@ -302,6 +304,7 @@
   height: 38px;
   background: #313b56;
 }
+.profileAvatar > span { width: 100%; height: 100%; border-radius: 12px; }
 
 .profileButton { border: 0; cursor: pointer; }
 .profileInfoButton { display: flex; min-width: 0; flex: 1; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
@@ -450,6 +453,7 @@
 }
 
 .messageBubble {
+  position: relative;
   max-width: min(75%, 480px);
   padding: 12px 14px 8px;
   border: 1px solid #292e3a;
@@ -471,14 +475,151 @@
   overflow-wrap: anywhere;
 }
 
+.replyPreview {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding: 6px 9px;
+  border-left: 2px solid #8298f5;
+  border-radius: 3px 7px 7px 3px;
+  background: #ffffff08;
+  color: #aebbd6;
+  font-size: 11px;
+}
+
+.replyPreview span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editedLabel { margin-right: 7px; color: #909ab0; font-size: 9px; }
+.messageBubble p.deletedMessage { color: #a0a8b8; font-style: italic; }
+.reactionList { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.reactionList button {
+  display: inline-flex;
+  min-width: 37px;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid #ffffff14;
+  border-radius: 13px;
+  background: #ffffff08;
+  color: #cbd4e5;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.reactionList button[aria-pressed="true"] { border-color: #8298f5a0; background: #8298f526; color: #e1e7ff; }
+.reactionList button:hover { border-color: #8298f580; }
+.messageActionsToolbar {
+  position: absolute;
+  z-index: 3;
+  top: -18px;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #343b4c;
+  border-radius: 10px;
+  background: #202633;
+  box-shadow: 0 7px 20px #0005;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.messageActionsToolbar button {
+  display: grid;
+  width: 29px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #c4cde0;
+  cursor: pointer;
+}
+.messageActionsToolbar button:hover { background: #ffffff12; color: #fff; }
+.messageActionsToolbar svg { width: 16px; height: 16px; }
+.messageRow:not(.myMessageRow) .messageActionsToolbar { right: auto; left: 8px; }
+.messageBubble:focus-within .messageActionsToolbar,
+.messageBubble.messageActionsVisible .messageActionsToolbar { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.messagePopover {
+  position: absolute;
+  z-index: 4;
+  top: 17px;
+  right: 7px;
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid #343b4c;
+  border-radius: 11px;
+  background: #202633;
+  box-shadow: 0 10px 26px #0007;
+}
+.messagePopover button {
+  display: grid;
+  min-width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #e3e8f2;
+  font-size: 18px;
+  cursor: pointer;
+}
+.messagePopover button:hover { background: #ffffff12; }
+.messageRow:not(.myMessageRow) .messagePopover { right: auto; left: 7px; }
+.messagePopover button:focus-visible, .messageActionsToolbar button:focus-visible, .reactionList button:focus-visible, .composerContext button:focus-visible { outline: 2px solid #8da4ff; outline-offset: 2px; }
+.moreMessageMenu { min-width: 130px; }
+.messagePopover .deleteMessageAction { display: block; width: 100%; min-width: 0; padding: 0 10px; color: #f0a9ac; font-size: 12px; text-align: left; }
+.messagePopover .deleteMessageAction:hover { background: #d95b6420; }
+.composerContext {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 clamp(14px, 5vw, 72px) 8px;
+  padding: 8px 11px;
+  border-left: 2px solid #8298f5;
+  border-radius: 5px;
+  background: #191d27;
+  color: #c5cee0;
+  font-size: 11px;
+}
+.composerContext span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composerContext strong { margin-right: 7px; color: #94a9ff; }
+.composerContext button { flex: 0 0 auto; border: 0; background: transparent; color: #aebbd6; font: inherit; cursor: pointer; }
+
+@media (hover: hover) and (pointer: fine) {
+  .messageBubble:hover .messageActionsToolbar { opacity: 1; pointer-events: auto; transform: translateY(0); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .messageActionsToolbar { top: -16px; }
+  .messagePopover { max-width: calc(100vw - 36px); }
+}
+
 .messageTime {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 5px;
   margin-top: 5px;
   color: #808ba1;
   font-size: 9px;
 }
+
+.messageReadStatus {
+  display: inline-flex;
+  width: 14px;
+  height: 12px;
+  align-items: center;
+  color: #8b95a8;
+}
+.messageReadStatus svg { width: 14px; height: 12px; overflow: visible; }
+.messageReadStatus path { stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.messageReadStatusRead { width: 21px; color: #8aa7ff; }
+.messageReadStatusRead svg { width: 21px; }
 
 .checkmark {
   color: #92a8ff;
@@ -572,6 +713,13 @@
 .profileForm label { display: flex; flex-direction: column; gap: 7px; color: #ccd4e2; font-size: 12px; font-weight: 650; }
 .profileForm input, .profileForm textarea, .profileForm select { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; outline: 0; background: #0d1016; color: var(--text); font: inherit; font-size: 13px; resize: vertical; }
 .profileForm textarea { min-height: 90px; }
+.avatarControls { display: flex; align-items: center; gap: 12px; }
+.profilePreview { width: 64px; height: 64px; border-radius: 18px; font-size: 22px; }
+.avatarUploadButton, .removeAvatarButton { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: #171d2a; color: #dce4f5; font: inherit; font-size: 12px; cursor: pointer; }
+.avatarUploadButton input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.avatarUploadButton:focus-within { outline: 2px solid #8da4ff; outline-offset: 3px; }
+.removeAvatarButton { background: transparent; color: #f0a9ac; }
+.avatarUploadButton:has(input:disabled), .removeAvatarButton:disabled { opacity: .6; cursor: wait; }
 .modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 3px; }
 .cancelButton { min-height: 42px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: #c1cada; font: inherit; font-size: 12px; cursor: pointer; }
 .saveButton:disabled { opacity: .6; cursor: wait; }
@@ -685,7 +833,8 @@
 @media (prefers-reduced-motion: reduce) {
   .iconButton,
   .attachButton,
-  .sendButton {
+  .sendButton,
+  .messageActionsToolbar {
     transition: none;
   }
 }
