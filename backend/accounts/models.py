@@ -1,5 +1,6 @@
 
 import secrets
+import uuid
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -9,6 +10,10 @@ from django.dispatch import receiver
 
 def generate_invite_code():
     return secrets.token_urlsafe(12)
+
+
+def avatar_upload_to(instance, filename):
+    return f"avatars/{uuid.uuid4().hex}.webp"
 
 
 class InviteCode(models.Model):
@@ -42,6 +47,12 @@ class UserProfile(models.Model):
         max_length=2,
         choices=LANGUAGE_CHOICES,
         default="en",
+    )
+    avatar = models.ImageField(
+        upload_to=avatar_upload_to,
+        blank=True,
+        null=True,
+        max_length=80,
     )
 
     def __str__(self):

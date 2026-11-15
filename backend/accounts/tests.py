@@ -1,9 +1,13 @@
 import json
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
+from pathlib import Path
 from threading import Barrier
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import close_old_connections
 from django.test import (
     Client,
@@ -12,6 +16,7 @@ from django.test import (
     override_settings,
     skipUnlessDBFeature,
 )
+from PIL import Image
 
 from .models import InviteCode, UserProfile
 
@@ -354,6 +359,100 @@ class ProfileEndpointTests(TestCase):
 
         anonymous = Client().get("/api/accounts/users/")
         self.assertEqual(anonymous.status_code, 401)
+
+
+class AvatarManagementTests(TestCase):
+    def setUp(self):
+        self.media = tempfile.TemporaryDirectory()
+        self.addCleanup(self.media.cleanup)
+        media_override = override_settings(MEDIA_ROOT=self.media.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+        self.user = User.objects.create_user("avatar-owner", password=VALID_PASSWORD)
+        self.other = User.objects.create_user("avatar-viewer", password=VALID_PASSWORD)
+        self.client.force_login(self.user)
+
+    @staticmethod
+    def image_upload(image_format="PNG", name="avatar.png", content_type="image/png"):
+        image_bytes = BytesIO()
+        Image.new("RGB", (24, 24), color=(35, 110, 220)).save(
+            image_bytes,
+            format=image_format,
+        )
+        return SimpleUploadedFile(name, image_bytes.getvalue(), content_type=content_type)
+
+    def test_avatar_upload_replace_read_and_remove(self):
+        first = self.client.post(
+            "/api/accounts/profile/avatar/",
+            {"avatar": self.image_upload()},
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()["profile"]["avatar_url"],
+                         f"/api/accounts/users/{self.user.pk}/avatar/")
+
+        profile = UserProfile.objects.get(user=self.user)
+        first_name = profile.avatar.name
+        self.assertTrue(first_name.startswith("avatars/"))
+        self.assertTrue(first_name.endswith(".webp"))
+        self.assertEqual(len(Path(first_name).name.removesuffix(".webp")), 32)
+
+        viewer = Client()
+        viewer.force_login(self.other)
+        image_response = viewer.get(first.json()["profile"]["avatar_url"])
+        self.assertEqual(image_response.status_code, 200)
+        self.assertEqual(image_response["Content-Type"], "image/webp")
+        self.assertEqual(image_response["Cache-Control"], "private, no-store")
+        image_content = b"".join(image_response.streaming_content)
+        self.assertTrue(image_content.startswith(b"RIFF"))
+        self.assertEqual(Client().get(first.json()["profile"]["avatar_url"]).status_code, 401)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            replacement = self.client.post(
+                "/api/accounts/profile/avatar/",
+                {"avatar": self.image_upload("JPEG", "another.jpg", "image/jpeg")},
+            )
+        self.assertEqual(replacement.status_code, 200)
+        profile.refresh_from_db()
+        self.assertNotEqual(profile.avatar.name, first_name)
+        self.assertFalse(profile.avatar.storage.exists(first_name))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            removed = self.client.delete("/api/accounts/profile/avatar/")
+        self.assertEqual(removed.status_code, 200)
+        self.assertIsNone(removed.json()["profile"]["avatar_url"])
+        self.assertFalse(profile.avatar.storage.exists(profile.avatar.name))
+
+    def test_invalid_and_oversized_uploads_are_rejected(self):
+        invalid = self.client.post(
+            "/api/accounts/profile/avatar/",
+            {"avatar": SimpleUploadedFile("fake.png", b"not an image", "image/png")},
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("avatar", invalid.json())
+
+        from accounts.views import MAX_AVATAR_SIZE
+
+        oversized = self.client.post(
+            "/api/accounts/profile/avatar/",
+            {"avatar": SimpleUploadedFile("large.png", b"x" * (MAX_AVATAR_SIZE + 1), "image/png")},
+        )
+        self.assertEqual(oversized.status_code, 400)
+        self.assertFalse(UserProfile.objects.get(user=self.user).avatar)
+
+    def test_avatar_mutation_requires_authentication_and_csrf(self):
+        anonymous_response = Client().post(
+            "/api/accounts/profile/avatar/",
+            {"avatar": self.image_upload()},
+        )
+        self.assertEqual(anonymous_response.status_code, 401)
+
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+        missing_csrf = csrf_client.post(
+            "/api/accounts/profile/avatar/",
+            {"avatar": self.image_upload()},
+        )
+        self.assertEqual(missing_csrf.status_code, 403)
 
 
 @skipUnlessDBFeature("has_select_for_update")

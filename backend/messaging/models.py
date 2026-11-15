@@ -45,11 +45,71 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         related_name="sent_messages",
     )
-    content = models.TextField(max_length=4000)
+    content = models.TextField(max_length=4000, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="replies",
+    )
 
     class Meta:
         ordering = ["created_at", "pk"]
         indexes = [
             models.Index(fields=["conversation", "created_at", "id"]),
+        ]
+
+
+class MessageReaction(models.Model):
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="reactions",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="message_reactions",
+    )
+    emoji = models.CharField(max_length=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "user", "emoji"],
+                name="unique_user_message_reaction",
+            ),
+        ]
+
+
+class ConversationReadState(models.Model):
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="read_states",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="conversation_read_states",
+    )
+    last_read_message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="read_by_states",
+    )
+    read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation", "user"],
+                name="unique_conversation_read_state_user",
+            ),
         ]
